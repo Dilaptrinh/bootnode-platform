@@ -88,8 +88,7 @@ Redirect frontend -> /payment/callback -> display result
 ## Contact
 
 - **Email:** buinhutduy040506@gmail.com
-- **Website:** [https://boodnode.cloud](https://boodnode.cloud)
-
+- **Website:** [https://bootnode.cloud](https://bootnode.cloud)
 ---
 
 *This project is under development. All contributions and feedback are welcome!*
