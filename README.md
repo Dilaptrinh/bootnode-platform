@@ -88,7 +88,7 @@ Redirect frontend -> /payment/callback -> display result
 ## Contact
 
 - **Email:** buinhutduy040506@gmail.com
-- **Website:** [https://hosting.duycode.id.vn](https://hosting.duycode.id.vn)
+- **Website:** [https://boodnode.cloud](https://boodnode.cloud)
 
 ---
 
