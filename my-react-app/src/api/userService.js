@@ -8,10 +8,6 @@ const userService = {
   updateProfile(data) {
     return axiosClient.put('/api/v1/users/me', data)
   },
-
-  changePassword(data) {
-    return axiosClient.put('/api/v1/users/me/password', data)
-  },
 }
 
 export default userService

@@ -2,6 +2,7 @@ package rentalhost.vn.web_rental.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -37,13 +38,16 @@ public class OrderService {
     private final UserRepository userRepository;
     private final PaymentRepository paymentRepository;
     private final OrderMapper orderMapper;
+    private final CatalogCacheService catalogCacheService;
 
     @Transactional
+    @CacheEvict(cacheNames = "servers", allEntries = true)
     public OrderDTO.OrderResponse create(Long userId, OrderDTO.OrderRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId));
 
-        Server server = serverRepository.findById(request.getServerId())
+        // Lock the plan row so concurrent checkouts cannot oversell the remaining slots.
+        Server server = serverRepository.findByIdForUpdate(request.getServerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Server", request.getServerId()));
 
         if (server.getStatus() != ServerStatus.AVAILABLE) {
@@ -53,7 +57,9 @@ public class OrderService {
         // Kiểm tra số lượng giới hạn: còn slot thì mới bán
         Integer qty = server.getQuantity();
         if (qty != null) {
-            long activeCount = orderRepository.countByServerAndStatus(server, OrderStatus.ACTIVE);
+            // Count both ACTIVE and PENDING orders so unpaid/awaiting orders also reserve a slot.
+            long activeCount = orderRepository.countByServerAndStatusIn(
+                    server, List.of(OrderStatus.ACTIVE, OrderStatus.PENDING));
             if (activeCount >= qty) {
                 throw new BadRequestException("Gói này đã hết chỗ, vui lòng chọn gói khác");
             }
@@ -78,6 +84,7 @@ public class OrderService {
 
         log.info("ORDER_CREATED orderId={} buyerId={} buyerEmail={} serverId={} server={} days={} total={}",
                 order.getId(), user.getId(), user.getEmail(), server.getId(), server.getName(), days, totalPrice);
+        catalogCacheService.purgeEdgeCacheAfterCommit();
 
         return orderMapper.toResponse(order);
     }
@@ -116,6 +123,7 @@ public class OrderService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "servers", allEntries = true)
     public OrderDTO.OrderResponse cancel(Long orderId, Long userId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
@@ -137,6 +145,7 @@ public class OrderService {
         }
 
         log.info("ORDER_CANCELLED orderId={} buyerId={}", order.getId(), userId);
+        catalogCacheService.purgeEdgeCacheAfterCommit();
 
         return orderMapper.toResponse(order);
     }

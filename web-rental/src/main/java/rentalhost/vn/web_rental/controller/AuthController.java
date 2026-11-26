@@ -4,7 +4,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import rentalhost.vn.web_rental.dto.AuthDTO;
@@ -13,31 +12,13 @@ import rentalhost.vn.web_rental.helper.ApiResponse;
 import rentalhost.vn.web_rental.security.SecurityUtil;
 import rentalhost.vn.web_rental.service.AuthService;
 
-@Tag(name = "Authentication", description = "Register, login, refresh token, logout")
+@Tag(name = "Authentication", description = "Refresh token, logout")
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
     private final AuthService authService;
-
-    @Operation(summary = "Register a new user account")
-    @PostMapping("/register")
-    public ApiResponse<AuthDTO.AuthResponse> register(@Valid @RequestBody AuthDTO.RegisterRequest request,
-                                                      HttpServletResponse response) {
-        AuthDTO.AuthResponse auth = authService.register(request);
-        setRefreshCookie(response, auth.getRefreshToken());
-        return ApiResponse.created(auth);
-    }
-
-    @Operation(summary = "Login with email and password")
-    @PostMapping("/login")
-    public ApiResponse<AuthDTO.AuthResponse> login(@Valid @RequestBody AuthDTO.LoginRequest request,
-                                                   HttpServletResponse response) {
-        AuthDTO.AuthResponse auth = authService.login(request);
-        setRefreshCookie(response, auth.getRefreshToken());
-        return ApiResponse.success(auth);
-    }
 
     @Operation(summary = "Refresh access token using refresh token")
     @PostMapping("/refresh")

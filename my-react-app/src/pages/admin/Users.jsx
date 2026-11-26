@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Table, Tag, Typography, Grid, Spin, message, Button, Space, Select, Modal, Input, Drawer, Descriptions, Empty, Divider } from 'antd'
-import { LockOutlined, UnlockOutlined, DeleteOutlined, CrownOutlined, SearchOutlined, LinkOutlined, ShoppingOutlined, GlobalOutlined } from '@ant-design/icons'
+import { Table, Typography, Grid, Spin, message, Button, Space, Select, Modal, Input, Drawer, Descriptions, Empty, Divider } from 'antd'
+import { LockOutlined, UnlockOutlined, DeleteOutlined, SearchOutlined, LinkOutlined, ShoppingOutlined, GlobalOutlined } from '@ant-design/icons'
 import adminService from '../../api/adminService'
-import { useTheme } from '../../contexts/ThemeContext'
 import { useAuth } from '../../contexts/AuthContext'
+import { PageHeader, StatusTag } from '../../components/ui'
 
-const { Title, Text } = Typography
+const { Text } = Typography
 const { useBreakpoint } = Grid
 
 export default function AdminUsers() {
@@ -21,13 +21,13 @@ export default function AdminUsers() {
   const [userOrders, setUserOrders] = useState([])
   const [userSites, setUserSites] = useState([])
   const [detailLoading, setDetailLoading] = useState(false)
-  const { isDark } = useTheme()
   const { user: currentUser, isSuperAdmin } = useAuth()
   const screens = useBreakpoint()
   const isMobile = !screens.md
 
   useEffect(() => {
     let active = true
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
     ;(async () => {
       try {
@@ -169,9 +169,7 @@ export default function AdminUsers() {
     },
     {
       title: 'Trạng thái', dataIndex: 'status', key: 'status',
-      render: (status) => (
-        <Tag color={status === 'ACTIVE' ? 'green' : 'red'}>{status === 'ACTIVE' ? 'Hoạt động' : 'Bị khóa'}</Tag>
-      ),
+      render: (status) => <StatusTag status={status} type="user" />,
     },
     {
       title: '', key: 'actions',
@@ -196,10 +194,13 @@ export default function AdminUsers() {
 
   return (
     <div>
-      <Title level={isMobile ? 4 : 3} style={{ color: isDark ? '#e8e8e8' : '#1a1a2e', marginBottom: 16 }}>
-        <CrownOutlined /> Quản lý người dùng
-      </Title>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16, alignItems: 'center' }}>
+      <PageHeader
+        eyebrow="Quản trị"
+        title="Quản lý người dùng"
+        subtitle="Tìm kiếm, phân quyền và quản lý trạng thái người dùng."
+      />
+
+      <div className="vh-card-soft" style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16, alignItems: 'center' }}>
         <Input.Search
           allowClear
           placeholder="Tìm theo email..."
@@ -234,9 +235,11 @@ export default function AdminUsers() {
           ]}
         />
       </div>
-      <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+
+      <Text className="vh-muted" style={{ display: 'block', marginBottom: 8 }}>
         Tổng {total} người dùng{roleFilter || statusFilter || searchEmail ? ' (đang lọc)' : ''}
       </Text>
+
       <Table
         columns={columns}
         dataSource={users}
@@ -252,6 +255,7 @@ export default function AdminUsers() {
           onChange: (p) => setPage(p - 1),
         } : false}
       />
+
       <Drawer
         title={selectedUser ? `Chi tiết người dùng: ${selectedUser.email}` : ''}
         width={isMobile ? '100%' : 720}
@@ -262,7 +266,7 @@ export default function AdminUsers() {
         {selectedUser && (
           <>
             <Descriptions
-              title={<Text strong><CrownOutlined /> Thông tin cá nhân</Text>}
+              title={<Text strong>Thông tin cá nhân</Text>}
               column={isMobile ? 1 : 2}
               size="small"
               bordered
@@ -272,12 +276,10 @@ export default function AdminUsers() {
               <Descriptions.Item label="Họ tên">{selectedUser.fullName || '--'}</Descriptions.Item>
               <Descriptions.Item label="SĐT">{selectedUser.phone || '--'}</Descriptions.Item>
               <Descriptions.Item label="Vai trò">
-                <Tag color={selectedUser.role === 'SUPER_ADMIN' ? 'gold' : selectedUser.role === 'ADMIN' ? 'blue' : 'default'}>
-                  {selectedUser.role}
-                </Tag>
+                <StatusTag status={selectedUser.role} type="role" />
               </Descriptions.Item>
               <Descriptions.Item label="Trạng thái">
-                <Tag color={selectedUser.status === 'ACTIVE' ? 'green' : 'red'}>{selectedUser.status}</Tag>
+                <StatusTag status={selectedUser.status} type="user" />
               </Descriptions.Item>
             </Descriptions>
 
@@ -294,12 +296,12 @@ export default function AdminUsers() {
                 pagination={false}
                 scroll={{ x: 520 }}
                 columns={[
-                  { title: 'Mã đơn', dataIndex: 'id', width: 70 },
+                  { title: 'Mã đơn', dataIndex: 'id', width: 70, render: (v) => <span className="vh-mono">#{v}</span> },
                   { title: 'Gói', dataIndex: 'serverName', render: (v) => v || '--' },
-                  { title: 'Tổng tiền', dataIndex: 'totalPrice', render: (v) => `${Number(v || 0).toLocaleString('vi-VN')} đ` },
+                  { title: 'Tổng tiền', dataIndex: 'totalPrice', render: (v) => <span className="vh-mono">{Number(v || 0).toLocaleString('vi-VN')} đ</span> },
                   {
                     title: 'Trạng thái', dataIndex: 'status',
-                    render: (v) => <Tag color={v === 'ACTIVE' ? 'green' : v === 'PENDING' ? 'orange' : 'default'}>{v}</Tag>,
+                    render: (v) => <StatusTag status={v} type="order" />,
                   },
                   { title: 'Ngày', dataIndex: 'startDate', render: (v) => v || '--' },
                 ]}
@@ -313,10 +315,10 @@ export default function AdminUsers() {
             ) : (
               <div style={{ marginTop: 8 }}>
                 {userSites.map((s) => (
-                  <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}>
+                  <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--vh-hairline)', gap: 12, flexWrap: 'wrap' }}>
                     <Space>
                       <Text code>{s.subdomain}</Text>
-                      <Tag color={s.status === 'ACTIVE' ? 'green' : s.status === 'FAILED' ? 'red' : 'orange'}>{s.status}</Tag>
+                      <StatusTag status={s.status} type="site" />
                     </Space>
                     <Space>
                       {s.status === 'ACTIVE' && s.url ? (
@@ -324,7 +326,7 @@ export default function AdminUsers() {
                           <LinkOutlined /> {s.url}
                         </a>
                       ) : (
-                        <Text type="secondary">{s.errorMessage || '--'}</Text>
+                        <Text className="vh-muted">{s.errorMessage || '--'}</Text>
                       )}
                       <Button type="text" danger size="small" icon={<DeleteOutlined />} onClick={() => handleDeleteSite(s)} />
                     </Space>

@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
-import { Table, Button, Space, Modal, Form, Input, Typography, Grid, message, Tag } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined, NotificationOutlined, CalendarOutlined } from '@ant-design/icons'
+import { useEffect, useState, useCallback } from 'react'
+import { Table, Button, Space, Modal, Form, Input, Typography, Grid, message } from 'antd'
+import { PlusOutlined, EditOutlined, DeleteOutlined, CalendarOutlined } from '@ant-design/icons'
 import announcementService from '../../api/announcementService'
-import { useTheme } from '../../contexts/ThemeContext'
+import { PageHeader } from '../../components/ui'
 
-const { Title, Text } = Typography
+const { Text } = Typography
 const { useBreakpoint } = Grid
 const { TextArea } = Input
 
@@ -23,11 +23,10 @@ export default function AdminAnnouncements() {
   const [editing, setEditing] = useState(null)
   const [saving, setSaving] = useState(false)
   const [form] = Form.useForm()
-  const { isDark } = useTheme()
   const screens = useBreakpoint()
   const isMobile = !screens.md
 
-  const load = async (p = page) => {
+  const load = useCallback(async (p = page) => {
     setLoading(true)
     try {
       const res = await announcementService.getAllAdmin({ page: p, size: 10, sort: 'createdAt,desc' })
@@ -38,11 +37,12 @@ export default function AdminAnnouncements() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [page])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load()
-  }, [page])
+  }, [load])
 
   const openCreate = () => {
     setEditing(null)
@@ -101,7 +101,9 @@ export default function AdminAnnouncements() {
     { title: 'Nội dung', dataIndex: 'content', ellipsis: true, render: (v) => v || '--' },
     {
       title: 'Ngày tạo', dataIndex: 'createdAt',
-      render: (v) => <Tag icon={<CalendarOutlined />} color="blue">{formatDate(v)}</Tag>,
+      render: (v) => (
+        <span className="vh-chip"><CalendarOutlined /> {formatDate(v)}</span>
+      ),
     },
     {
       title: '', key: 'actions', width: 110,
@@ -116,12 +118,12 @@ export default function AdminAnnouncements() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Title level={isMobile ? 4 : 3} style={{ color: isDark ? '#e8e8e8' : '#1a1a2e', margin: 0 }}>
-          <NotificationOutlined /> Quản lý thông báo
-        </Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>Tạo thông báo</Button>
-      </div>
+      <PageHeader
+        eyebrow="Quản trị"
+        title="Quản lý thông báo"
+        subtitle="Đăng tải thông báo tới toàn bộ người dùng."
+        extra={<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>Tạo thông báo</Button>}
+      />
 
       <Table
         rowKey="id"

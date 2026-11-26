@@ -2,11 +2,11 @@
 import AppLayout from './components/AppLayout'
 import PrivateRoute from './components/PrivateRoute'
 import AdminRoute from './components/AdminRoute'
+import Home from './pages/Home'
 import Hosting from './pages/Hosting'
 import About from './pages/About'
 import Contact from './pages/Contact'
 import Login from './pages/Login'
-import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile'
 import OrderConfirm from './pages/OrderConfirm'
@@ -23,22 +23,26 @@ import AdminPayments from './pages/admin/Payments'
 import UploadProject from './pages/UploadProject'
 import Announcements from './pages/Announcements'
 import AdminAnnouncements from './pages/admin/Announcements'
+import AdminFaqs from './pages/admin/Faqs'
+import AdminSiteSettings from './pages/admin/SiteSettings'
+
 export default function App() {
   return (
     <Routes>
       <Route element={<AppLayout />}>
-        <Route path="/" element={<Hosting />} />
-        <Route path="/hosting" element={<Navigate to="/" replace />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/home" element={<Navigate to="/" replace />} />
+        <Route path="/hosting" element={<Hosting />} />
+        <Route path="/deployment" element={<UploadProject />} />
         <Route path="/info" element={<Announcements />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/order/:planName" element={<OrderConfirm />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path='/deployment' element={<UploadProject></UploadProject>}></Route>
+        <Route path="/register" element={<Navigate to="/login" replace />} />
         <Route path="/oauth2/callback" element={<OAuth2Callback />} />
         <Route path="/payment/callback" element={<PaymentCallback />} />
-        <Route 
+        <Route
           path="/dashboard"
           element={<PrivateRoute><Dashboard /></PrivateRoute>}
         />
@@ -82,10 +86,16 @@ export default function App() {
           path="/admin/announcements"
           element={<AdminRoute><AdminAnnouncements /></AdminRoute>}
         />
+        <Route
+          path="/admin/faqs"
+          element={<AdminRoute><AdminFaqs /></AdminRoute>}
+        />
+        <Route
+          path="/admin/settings"
+          element={<AdminRoute><AdminSiteSettings /></AdminRoute>}
+        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
   )
 }
-
-

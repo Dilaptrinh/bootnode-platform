@@ -1,110 +1,200 @@
-import { Button, Card, Col, Row, Typography, Grid } from 'antd'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Row, Col, Card, Button, Spin, Empty, Collapse } from 'antd'
 import {
+  RocketOutlined,
   CloudServerOutlined,
-  SafetyOutlined,
-  ThunderboltOutlined,
-  CustomerServiceOutlined,
   ArrowRightOutlined,
+  GithubOutlined,
+  FolderOutlined,
+  GlobalOutlined,
+  CalendarOutlined,
 } from '@ant-design/icons'
-import { useTheme } from '../contexts/ThemeContext'
+import { useNavigate } from 'react-router-dom'
+import serverService from '../api/serverService'
+import announcementService from '../api/announcementService'
+import faqService from '../api/faqService'
+import { useSiteSettings } from '../contexts/siteSettingsContext'
+import { SectionHeading, TerminalMockup } from '../components/ui'
 
-const { Title, Paragraph, Text } = Typography
-const { useBreakpoint } = Grid
-
-const features = [
-  { icon: <ThunderboltOutlined />, title: 'Tốc độ cao', desc: 'SSD NVMe, băng thông 1Gbps' },
-  { icon: <SafetyOutlined />, title: 'Bảo mật', desc: 'SSL miễn phí, DDoS Protection' },
-  { icon: <CustomerServiceOutlined />, title: 'Hỗ trợ 24/7', desc: 'Đội ngũ kỹ thuật chuyên nghiệp' },
-  { icon: <CloudServerOutlined />, title: 'Uptime 99.9%', desc: 'Cam kết hoạt động liên tục' },
-]
-
-const stats = [
-  { value: 15000, suffix: '+', label: 'Khách hàng' },
-  { value: 99.9, suffix: '%', label: 'Uptime' },
-  { value: 50, suffix: 'ms', label: 'Tốc độ' },
-  { value: 24, suffix: '/7', label: 'Hỗ trợ' },
-]
+function formatPrice(price) {
+  return new Intl.NumberFormat('vi-VN').format(price)
+}
 
 export default function Home() {
   const navigate = useNavigate()
-  const { isDark } = useTheme()
-  const screens = useBreakpoint()
-  const isMobile = !screens.md
+  const { settings } = useSiteSettings()
+  const heroTitle = settings['home.hero_title']
+  const heroSubtitle = settings['home.hero_subtitle']
+  const [servers, setServers] = useState([])
+  const [announcements, setAnnouncements] = useState([])
+  const [faqs, setFaqs] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    const load = async () => {
+      const [serversRes, annRes, faqGeneral, faqDeploy] = await Promise.allSettled([
+        serverService.getAll({ page: 0, size: 20 }),
+        announcementService.getAll(),
+        faqService.getByCategory('GENERAL'),
+        faqService.getByCategory('DEPLOY'),
+      ])
+      if (!active) return
+      if (serversRes.status === 'fulfilled') {
+        setServers(serversRes.value.data.data.content || [])
+      }
+      if (annRes.status === 'fulfilled') {
+        setAnnouncements((annRes.value.data.data || []).slice(0, 3))
+      }
+      const general = faqGeneral.status === 'fulfilled' ? (faqGeneral.value.data.data || []) : []
+      const deploy = faqDeploy.status === 'fulfilled' ? (faqDeploy.value.data.data || []) : []
+      setFaqs([...general, ...deploy].slice(0, 6))
+      setLoading(false)
+    }
+    load()
+    return () => { active = false }
+  }, [])
+
+  const minPrice = servers.length
+    ? Math.min(...servers.map((s) => Number(s.price)).filter((n) => !Number.isNaN(n)))
+    : null
+
+  const faqItems = faqs.map((f) => ({
+    key: String(f.id),
+    label: f.question,
+    children: <p style={{ margin: 0 }}>{f.answer}</p>,
+  }))
 
   return (
     <div>
-      <div style={{ textAlign: 'center', padding: isMobile ? '32px 0 24px' : '60px 0 40px' }}>
-        <Title style={{
-          fontSize: isMobile ? 28 : 42,
-          marginBottom: 16,
-          color: isDark ? '#e8e8e8' : '#1a1a2e',
-        }}>
-          Thuê Hosting Giá Rẻ
-        </Title>
-        <Paragraph style={{
-          fontSize: isMobile ? 15 : 18,
-          color: isDark ? '#8c8c8c' : '#6b7280',
-          maxWidth: 600,
-          margin: '0 auto 24px',
-          padding: '0 16px',
-        }}>
-          Tốc độ cao - Bảo mật tối ưu - Hỗ trợ 24/7. Khởi tạo website của bạn ngay hôm nay!
-        </Paragraph>
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', padding: '0 16px' }}>
-          <Button type="primary" size={isMobile ? 'middle' : 'large'} onClick={() => navigate('/hosting')}>
-            Xem gói hosting <ArrowRightOutlined />
-          </Button>
-          <Button size={isMobile ? 'middle' : 'large'} onClick={() => navigate('/about')}>
-            Tìm hiểu thêm
-          </Button>
+      <section className="vh-hero">
+        <div className="vh-hero__copy">
+          <div className="vh-eyebrow">Dành cho sinh viên Đại học Cần Thơ</div>
+          <h1 className="vh-h1">{heroTitle}</h1>
+          <p className="vh-lead" style={{ whiteSpace: 'pre-line' }}>{heroSubtitle}</p>
+          <div className="vh-hero__actions">
+            <Button type="primary" size="large" onClick={() => navigate('/deployment')}>
+              Triển khai miễn phí <ArrowRightOutlined />
+            </Button>
+            <Button size="large" onClick={() => navigate('/hosting')}>
+              Xem gói hosting
+            </Button>
+          </div>
         </div>
-      </div>
+        <TerminalMockup />
+      </section>
 
-      <Row gutter={[16, 16]} style={{ margin: isMobile ? '16px 0' : '40px 0' }}>
-        {features.map((feat, i) => (
-          <Col xs={24} md={8} lg={6} key={i}>
-            <Card
-              hoverable
-              styles={{ body: { padding: isMobile ? 20 : 24 } }}
-              style={{
-                textAlign: 'center',
-                borderRadius: 12,
-                background: isDark ? '#1f1f1f' : '#fff',
-                border: `1px solid ${isDark ? '#303030' : '#f0f0f0'}`,
-              }}
-            >
-              <div style={{ fontSize: isMobile ? 28 : 36, color: '#1677ff', marginBottom: 12 }}>{feat.icon}</div>
-              <Title level={4} style={{ fontSize: isMobile ? 16 : 20, color: isDark ? '#e8e8e8' : '#1a1a2e' }}>
-                {feat.title}
-              </Title>
-              <Text style={{ fontSize: isMobile ? 13 : 14, color: isDark ? '#8c8c8c' : '#6b7280' }}>{feat.desc}</Text>
+      <section className="vh-section">
+        <SectionHeading
+          align="center"
+          eyebrow="Hai dịch vụ tách biệt"
+          title="Chọn đúng nhu cầu của bạn"
+          subtitle="Triển khai web tĩnh miễn phí cho sinh viên CTU, hoặc thuê hosting trả phí cho dự án lớn hơn."
+        />
+        <Row gutter={[20, 20]}>
+          <Col xs={24} md={12}>
+            <Card styles={{ body: { padding: 32 } }} style={{ borderRadius: 12, height: '100%' }}>
+              <div className="vh-feature-icon vh-feature-icon--sky">
+                <RocketOutlined />
+              </div>
+              <h3 className="vh-h3" style={{ fontSize: 22, margin: '16px 0 6px' }}>
+                Triển khai web tĩnh
+              </h3>
+              <div className="vh-chip" style={{ marginBottom: 12 }}>Miễn phí</div>
+              <p className="vh-muted" style={{ marginBottom: 20 }}>
+                Dành cho sinh viên có email @student.ctu.edu.vn. Tải thư mục hoặc kết nối GitHub,
+                website chạy trên subdomain với dung lượng tối đa 50MB.
+              </p>
+              <div className="vh-stack vh-gap-8" style={{ marginBottom: 24 }}>
+                <span><GlobalOutlined style={{ color: 'var(--vh-link)', marginRight: 8 }} />Subdomain *.bootnode.cloud</span>
+                <span><FolderOutlined style={{ color: 'var(--vh-link)', marginRight: 8 }} />Tải lên thư mục tĩnh</span>
+                <span><GithubOutlined style={{ color: 'var(--vh-link)', marginRight: 8 }} />Kết nối GitHub</span>
+              </div>
+              <Button type="primary" onClick={() => navigate('/deployment')}>
+                Triển khai miễn phí <ArrowRightOutlined />
+              </Button>
             </Card>
           </Col>
-        ))}
-      </Row>
-
-      <div style={{
-        padding: isMobile ? '24px 16px' : '40px 24px',
-        borderRadius: 16,
-        background: isDark ? '#1f1f1f' : '#f0f5ff',
-        margin: isMobile ? '16px 0' : '40px 0',
-      }}>
-        <Row gutter={[16, 24]} justify="center">
-          {stats.map((stat, i) => (
-            <Col xs={12} sm={6} key={i}>
-              <div style={{ textAlign: 'center' }}>
-                <Title level={isMobile ? 3 : 2} style={{ color: '#1677ff', margin: 0, fontSize: isMobile ? 22 : 32 }}>
-                  {stat.value}{stat.suffix}
-                </Title>
-                <Text style={{ color: isDark ? '#8c8c8c' : '#6b7280', fontSize: isMobile ? 13 : 16 }}>
-                  {stat.label}
-                </Text>
+          <Col xs={24} md={12}>
+            <Card styles={{ body: { padding: 32 } }} style={{ borderRadius: 12, height: '100%' }}>
+              <div className="vh-feature-icon vh-feature-icon--amber">
+                <CloudServerOutlined />
               </div>
-            </Col>
-          ))}
+              <h3 className="vh-h3" style={{ fontSize: 22, margin: '16px 0 6px' }}>
+                Thuê hosting
+              </h3>
+              <div className="vh-chip" style={{ marginBottom: 12 }}>Trả phí</div>
+              <p className="vh-muted" style={{ marginBottom: 20 }}>
+                Chọn gói theo CPU, RAM, dung lượng và băng thông. Giá và số chỗ còn lại
+                được cập nhật trực tiếp từ hệ thống.
+              </p>
+              <div style={{ marginBottom: 24 }}>
+                {loading ? (
+                  <Spin size="small" />
+                ) : minPrice != null ? (
+                  <>
+                    <span className="vh-price" style={{ fontSize: 28 }}>Từ {formatPrice(minPrice)}₫</span>
+                    <span className="vh-muted" style={{ marginLeft: 4 }}>/ngày</span>
+                  </>
+                ) : (
+                  <span className="vh-muted">Xem bảng giá chi tiết</span>
+                )}
+              </div>
+              <Button onClick={() => navigate('/hosting')}>
+                Xem gói hosting <ArrowRightOutlined />
+              </Button>
+            </Card>
+          </Col>
         </Row>
-      </div>
+      </section>
+
+      <section className="vh-section" style={{ paddingTop: 0 }}>
+        <SectionHeading
+          eyebrow="Cập nhật"
+          title="Thông báo mới nhất"
+          subtitle="Tin tức và thay đổi mới nhất từ hệ thống."
+        />
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: 48 }}><Spin size="large" /></div>
+        ) : announcements.length === 0 ? (
+          <Empty description="Chưa có thông báo nào" />
+        ) : (
+          <Row gutter={[20, 20]}>
+            {announcements.map((item) => (
+              <Col xs={24} md={8} key={item.id}>
+                <Card styles={{ body: { padding: 24 } }} style={{ borderRadius: 8, height: '100%' }}>
+                  <span className="vh-chip" style={{ marginBottom: 12 }}>
+                    <CalendarOutlined /> {new Date(item.createdAt).toLocaleDateString('vi-VN')}
+                  </span>
+                  <h3 className="vh-h3" style={{ fontSize: 18, margin: '8px 0 6px' }}>{item.title}</h3>
+                  <p className="vh-muted" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{item.content}</p>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        )}
+        <div style={{ marginTop: 24 }}>
+          <Button type="link" style={{ padding: 0 }} onClick={() => navigate('/info')}>
+            Xem tất cả thông báo <ArrowRightOutlined />
+          </Button>
+        </div>
+      </section>
+
+      {faqItems.length > 0 && (
+        <section className="vh-section" style={{ paddingTop: 0 }}>
+          <div className="vh-split" style={{ alignItems: 'start' }}>
+            <div>
+              <div className="vh-eyebrow">Câu hỏi thường gặp</div>
+              <h2 className="vh-h2" style={{ marginBottom: 12 }}>Bạn cần biết trước khi bắt đầu</h2>
+              <p className="vh-muted" style={{ marginBottom: 20 }}>
+                Không tìm thấy câu trả lời? Xem trang Liên hệ để được hỗ trợ.
+              </p>
+              <Button onClick={() => navigate('/contact')}>Liên hệ hỗ trợ</Button>
+            </div>
+            <Collapse bordered={false} defaultActiveKey={faqItems[0] ? [faqItems[0].key] : []} items={faqItems} />
+          </div>
+        </section>
+      )}
     </div>
   )
 }

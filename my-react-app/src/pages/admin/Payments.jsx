@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Table, Tag, Typography, Grid, Spin, message, Button, Space, Popconfirm } from 'antd'
-import { DollarOutlined } from '@ant-design/icons'
+import { Table, Typography, Grid, Spin, message, Button, Space, Popconfirm } from 'antd'
 import adminService from '../../api/adminService'
-import { useTheme } from '../../contexts/ThemeContext'
+import { PageHeader, StatusTag } from '../../components/ui'
 
-const { Title, Text } = Typography
+const { Text } = Typography
 const { useBreakpoint } = Grid
 
 const methodLabels = { BANKING: 'Chuyển khoản', MOMO: 'MoMo', VNPAY: 'VNPay', CASH: 'Tiền mặt', PAYOS: 'PayOS' }
@@ -15,7 +14,6 @@ export default function AdminPayments() {
   const [page, setPage] = useState(0)
   const [total, setTotal] = useState(0)
   const [actingId, setActingId] = useState(null)
-  const { isDark } = useTheme()
   const screens = useBreakpoint()
   const isMobile = !screens.md
 
@@ -58,16 +56,13 @@ export default function AdminPayments() {
     } finally { setActingId(null) }
   }
 
-  const statusColors = { PENDING: 'gold', COMPLETED: 'green', FAILED: 'red', REFUNDED: 'blue' }
-  const statusLabels = { PENDING: 'Chờ xử lý', COMPLETED: 'Hoàn tất', FAILED: 'Thất bại', REFUNDED: 'Hoàn tiền' }
-
   const columns = [
-    { title: 'Mã GD', dataIndex: 'id', key: 'id', width: 80, render: (id) => <Text copyable>#{id}</Text> },
-    { title: 'Mã ĐH', dataIndex: 'orderId', key: 'orderId', render: (oid) => `#${oid}` },
-    { title: 'Số tiền', dataIndex: 'amount', key: 'amount', render: (a) => <Text strong>{formatPrice(a)}₫</Text> },
+    { title: 'Mã GD', dataIndex: 'id', key: 'id', width: 80, render: (id) => <Text copyable className="vh-mono">#{id}</Text> },
+    { title: 'Mã ĐH', dataIndex: 'orderId', key: 'orderId', render: (oid) => <span className="vh-mono">#{oid}</span> },
+    { title: 'Số tiền', dataIndex: 'amount', key: 'amount', render: (a) => <span className="vh-mono vh-text-primary" style={{ fontWeight: 600 }}>{formatPrice(a)}₫</span> },
     { title: 'Phương thức', dataIndex: 'method', key: 'method', render: (m) => methodLabels[m] || m, responsive: ['md'] },
     { title: 'Mã GD', dataIndex: 'transactionId', key: 'transactionId', render: (v) => v || '--', responsive: ['lg'] },
-    { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (s) => <Tag color={statusColors[s] || 'default'}>{statusLabels[s] || s}</Tag> },
+    { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (s) => <StatusTag status={s} type="payment" /> },
     { title: 'Ngày', dataIndex: 'paidAt', key: 'paidAt', render: (v) => v ? new Date(v).toLocaleDateString('vi-VN') : '--', responsive: ['md'] },
     {
       title: 'Thao tác',
@@ -102,9 +97,11 @@ export default function AdminPayments() {
 
   return (
     <div>
-      <Title level={isMobile ? 4 : 3} style={{ color: isDark ? '#e8e8e8' : '#1a1a2e', marginBottom: 16 }}>
-        <DollarOutlined /> Quản lý thanh toán
-      </Title>
+      <PageHeader
+        eyebrow="Quản trị"
+        title="Quản lý thanh toán"
+        subtitle="Xác nhận hoặc từ chối các giao dịch đang chờ xử lý."
+      />
       <Table
         columns={columns}
         dataSource={payments}

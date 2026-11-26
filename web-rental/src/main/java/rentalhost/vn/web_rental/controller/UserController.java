@@ -5,7 +5,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import rentalhost.vn.web_rental.dto.AuthDTO;
 import rentalhost.vn.web_rental.dto.UserDTO;
 import rentalhost.vn.web_rental.helper.ApiResponse;
 import rentalhost.vn.web_rental.security.SecurityUtil;
@@ -29,13 +28,5 @@ public class UserController {
     @PutMapping("/me")
     public ApiResponse<UserDTO.UserResponse> updateProfile(@Valid @RequestBody UserDTO.UpdateProfileRequest request) {
         return ApiResponse.success(userService.updateProfile(SecurityUtil.getCurrentUserId(), request));
-    }
-
-    @Operation(summary = "Change password")
-    
-    @PutMapping("/me/password")
-    public ApiResponse<Void> changePassword(@Valid @RequestBody AuthDTO.ChangePasswordRequest request) {
-        userService.changePassword(SecurityUtil.getCurrentUserId(), request.getOldPassword(), request.getNewPassword());
-        return ApiResponse.success("Password changed", null);
     }
 }

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import rentalhost.vn.web_rental.config.DeployAccessConfig;
+import rentalhost.vn.web_rental.config.SiteStorageConfig;
 import rentalhost.vn.web_rental.dto.SiteDTO;
 import rentalhost.vn.web_rental.enums.SiteSource;
 import rentalhost.vn.web_rental.enums.SiteStatus;
@@ -34,6 +35,8 @@ public class SiteService {
     private final SiteStorageService storageService;
     private final GitHubCloneService gitHubCloneService;
     private final DeployAccessConfig deployAccessConfig;
+    private final SiteStorageConfig siteStorageConfig;
+    private final SiteSettingService siteSettingService;
 
     @Transactional
     @CacheEvict(cacheNames = "mySites", allEntries = true)
@@ -142,7 +145,6 @@ public class SiteService {
         if (existing != null) {
             String oldSub = existing.getSubdomain();
             if (!oldSub.equals(resolved)) {
-                // Đổi subdomain -> xóa folder cũ để giải phóng tên miền cũ
                 storageService.deleteSiteFolder(oldSub);
                 existing.setSubdomain(resolved);
             }
@@ -158,30 +160,46 @@ public class SiteService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
+    public SiteDTO.EligibilityResponse getEligibility(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+        String reason = denyReason(userId, user);
+        return SiteDTO.EligibilityResponse.builder()
+                .allowed(reason == null)
+                .email(user.getEmail())
+                .allowedDomains(siteSettingService.getDeployAllowedDomains())
+                .maxSizeMb(siteSettingService.getMaxDeploySizeBytes() / (1024 * 1024))
+                .baseDomain(siteStorageConfig.getBaseDomain())
+                .reason(reason)
+                .build();
+    }
+
     private void assertDeployAllowed(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+        String reason = denyReason(userId, user);
+        if (reason != null) {
+            log.warn("DEPLOY_DENIED userId={} email={}", userId, user.getEmail());
+            throw new ForbiddenException(reason);
+        }
+    }
 
-        // Admin/Super Admin luôn được phép deploy
+    private String denyReason(Long userId, User user) {
         if (user.getRole() == UserRole.ADMIN || user.getRole() == UserRole.SUPER_ADMIN) {
-            return;
+            return null;
         }
-
-        // Giữ quyền cho chủ site đã tồn tại (grandfather) để không làm hỏng website đang chạy
         if (siteRepository.findByUserId(userId).isPresent()) {
-            return;
+            return null;
         }
-
         String email = user.getEmail();
         if (email != null && isEmailAllowed(email)) {
-            return;
+            return null;
         }
-
-        log.warn("DEPLOY_DENIED userId={} email={} - ngoai danh sach cho phep", userId, email);
-        throw new ForbiddenException("Tài khoản " + (email != null ? email : "")
+        String domains = String.join(", ", siteSettingService.getDeployAllowedDomains());
+        return "Tài khoản " + (email != null ? email : "")
                 + " không nằm trong danh sách được phép deploy. Chỉ email thuộc "
-                + String.join(", ", deployAccessConfig.getAllowedEmailDomains())
-                + " mới được deploy website.");
+                + domains + " mới được deploy website.";
     }
 
     private boolean isEmailAllowed(String email) {
@@ -196,7 +214,7 @@ public class SiteService {
             return true;
         }
 
-        return deployAccessConfig.getAllowedEmailDomains().stream()
+        return siteSettingService.getDeployAllowedDomains().stream()
                 .filter(d -> d != null && !d.isBlank())
                 .map(d -> d.trim().toLowerCase().replaceFirst("^@", ""))
                 .anyMatch(d -> normalized.endsWith("@" + d));

@@ -2,14 +2,11 @@ package rentalhost.vn.web_rental.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import rentalhost.vn.web_rental.dto.AuthDTO;
 import rentalhost.vn.web_rental.enums.UserRole;
 import rentalhost.vn.web_rental.enums.UserStatus;
-import rentalhost.vn.web_rental.exception.BadRequestException;
-import rentalhost.vn.web_rental.exception.DuplicateResourceException;
 import rentalhost.vn.web_rental.exception.UnauthorizedException;
 import rentalhost.vn.web_rental.model.User;
 import rentalhost.vn.web_rental.repository.UserRepository;
@@ -17,60 +14,21 @@ import rentalhost.vn.web_rental.security.JwtConfig;
 import rentalhost.vn.web_rental.security.JwtTokenProvider;
 import rentalhost.vn.web_rental.security.RefreshTokenStore;
 
-
-import java.util.UUID;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final JwtConfig jwtConfig;
     private final RefreshTokenStore refreshTokenStore;
-    // Đăng ký bằng form thường bị tắt vì chưa có xác thực email.
-    // Bật lại khi có email verification: app.registration.enabled=true
-    @Value("${app.registration.enabled:false}")
-    private boolean registrationEnabled;
 
-    @Transactional
-    public AuthDTO.AuthResponse register(AuthDTO.RegisterRequest request) {
-        if (!registrationEnabled) {
-            throw new BadRequestException("Đăng ký bằng email/mật khẩu đang tạm khóa. Vui lòng đăng ký bằng Google.");
-        }
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new DuplicateResourceException("Email already in use");
-        }
-
-        User user = User.builder()
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .fullName(request.getFullName())
-                .phone(request.getPhone())
-                .role(UserRole.USER)
-                .status(UserStatus.ACTIVE)
-                .build();
-        user = userRepository.save(user);
-
-        return generateAuthResponse(user);
-    }
-
-    @Transactional
-    public AuthDTO.AuthResponse login(AuthDTO.LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
-
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new UnauthorizedException("Invalid email or password");
-        }
-
-        if (user.getStatus() == UserStatus.BANNED) {
-            throw new UnauthorizedException("Account is banned");
-        }
-
-        return generateAuthResponse(user);
-    }
+    @Value("${app.auth.admin-emails:}")
+    private String adminEmails;
 
     @Transactional
     public AuthDTO.AuthResponse refresh(AuthDTO.RefreshTokenRequest request) {
@@ -90,7 +48,7 @@ public class AuthService {
 
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
-        refreshTokenStore.delete(token , userId);
+        refreshTokenStore.delete(token, userId);
 
         return generateAuthResponse(user);
     }
@@ -103,11 +61,10 @@ public class AuthService {
             if (user == null) {
                 user = User.builder()
                         .email(email)
-                        .password(passwordEncoder.encode(UUID.randomUUID().toString()))
                         .fullName(name)
                         .avatar(avatar)
                         .googleId(googleId)
-                        .role(UserRole.USER)
+                        .role(isAdminEmail(email) ? UserRole.SUPER_ADMIN : UserRole.USER)
                         .status(UserStatus.ACTIVE)
                         .build();
             } else {
@@ -117,12 +74,31 @@ public class AuthService {
                 }
             }
         }
+        if (isAdminEmail(user.getEmail()) && user.getRole() != UserRole.SUPER_ADMIN) {
+            user.setRole(UserRole.SUPER_ADMIN);
+        }
         return generateAuthResponse(userRepository.save(user));
     }
 
     @Transactional
     public void logout(Long userId) {
         refreshTokenStore.deleteAllByUserId(userId);
+    }
+
+    private boolean isAdminEmail(String email) {
+        if (email == null || adminEmails == null || adminEmails.isBlank()) {
+            return false;
+        }
+        String normalized = email.trim().toLowerCase(Locale.ROOT);
+        return adminEmailList().stream().anyMatch(normalized::equals);
+    }
+
+    private List<String> adminEmailList() {
+        return Arrays.stream(adminEmails.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(s -> s.toLowerCase(Locale.ROOT))
+                .toList();
     }
 
     private AuthDTO.AuthResponse generateAuthResponse(User user) {

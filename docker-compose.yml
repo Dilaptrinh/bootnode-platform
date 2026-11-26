@@ -2,8 +2,6 @@
 
 services:
 
-  # 1. DATABASE: MySQL 8.0
-
   mysql-db:
     image: mysql:8.0
     container_name: web_rental_mysql
@@ -14,12 +12,9 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - hire-host-new_mysql_data:/var/lib/mysql
     networks:
       - web_rental_net
-
-
-  # 2. BACKEND: Spring Boot Java 17
 
   redis:
     image: redis:7-alpine
@@ -40,64 +35,51 @@ services:
     ports:
       - "8081:8081"
     environment:
-
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/${MYSQL_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
 
-      # Domain System Config
       APP_BASE_URL: ${APP_BASE_URL:-https://bootnode.cloud}
       APP_FRONTEND_URL: ${APP_FRONTEND_URL:-https://bootnode.cloud}
       APP_BASE_DOMAIN: ${APP_BASE_DOMAIN:-bootnode.cloud}
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-https://bootnode.cloud,http://localhost:5173}
+      SPRINGDOC_ENABLED: ${SPRINGDOC_ENABLED:-false}
 
-      # Security & Admin Config
       JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-here-must-be-at-least-256-bits-long}
-      SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:-superadmin@web-rental.com}
-      SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-SuperAdmin@123}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-duyb2407571@student.ctu.edu.vn}
 
-      # Google OAuth2 Credentials
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
 
-      # MoMo Payment Sandbox Credentials
       MOMO_PARTNER_CODE: ${MOMO_PARTNER_CODE}
       MOMO_ACCESS_KEY: ${MOMO_ACCESS_KEY}
       MOMO_SECRET_KEY: ${MOMO_SECRET_KEY}
 
-      # PayOS Credentials
       PAYOS_CLIENT_ID: ${PAYOS_CLIENT_ID}
       PAYOS_API_KEY: ${PAYOS_API_KEY}
       PAYOS_CHECKSUM_KEY: ${PAYOS_CHECKSUM_KEY}
 
-      # Static Site Hosting
       SITE_ROOT_PATH: /srv/hosted-sites
 
-      # Deploy email allowlist (admin cau hinh)
       DEPLOY_ALLOWED_EMAIL_DOMAINS: ${DEPLOY_ALLOWED_EMAIL_DOMAINS:-student.ctu.edu.vn}
       DEPLOY_ALLOWED_EMAILS: ${DEPLOY_ALLOWED_EMAILS:-}
 
-      # Manual payment approve window (minutes)
       MANUAL_PENDING_TIMEOUT_MINUTES: ${MANUAL_PENDING_TIMEOUT_MINUTES:-1440}
 
-      # Redis
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
 
-      # Cloudflare Cache Purge Integration
       CLOUDFLARE_ENABLED: ${CLOUDFLARE_ENABLED:-false}
       CLOUDFLARE_ZONE_ID: ${CLOUDFLARE_ZONE_ID}
       CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN}
     volumes:
-      - hosted_sites:/srv/hosted-sites
+      - hire-host-new_hosted_sites:/srv/hosted-sites
       - backend_logs:/srv/logs
     depends_on:
       - mysql-db
       - redis
     networks:
       - web_rental_net
-
-
-  # 3. FRONTEND: React + Nginx
 
   frontend:
     build:
@@ -108,16 +90,17 @@ services:
     ports:
       - "80:80"
     volumes:
-      - hosted_sites:/srv/hosted-sites:ro
+      - hire-host-new_hosted_sites:/srv/hosted-sites:ro
     depends_on:
       - backend
     networks:
       - web_rental_net
 
-
 volumes:
-  mysql_data:
-  hosted_sites:
+  hire-host-new_mysql_data:
+    external: true
+  hire-host-new_hosted_sites:
+    external: true
   redis_data:
   backend_logs:
 

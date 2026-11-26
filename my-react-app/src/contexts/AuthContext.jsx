@@ -5,7 +5,6 @@ import userService from '../api/userService'
 import {
   setAccessToken,
   clearAccessToken,
-  setRefreshToken,
   clearRefreshToken,
 } from '../api/tokenStorage'
 import { API_BASE_URL } from '../config'
@@ -24,7 +23,6 @@ const initialUser = () => {
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(initialUser)
-  const [loading, setLoading] = useState(false)
   const [initializing, setInitializing] = useState(true)
   const initRef = useRef(false)
 
@@ -33,7 +31,6 @@ export function AuthProvider({ children }) {
     initRef.current = true
 
     const initAuth = async () => {
-      // Refresh token nằm trong cookie HttpOnly -> tự gửi kèm, chỉ cần gọi refresh
       try {
         const res = await axios.post(`${API_BASE_URL}/api/v1/auth/refresh`, {}, { withCredentials: true })
         const auth = res.data.data
@@ -62,59 +59,11 @@ export function AuthProvider({ children }) {
     initAuth()
   }, [])
 
-  const login = useCallback(async (email, password) => {
-    setLoading(true)
-    clearAccessToken()
-    clearRefreshToken()
-    localStorage.removeItem('user')
-    setUser(null)
-    try {
-      const res = await authService.login({ email, password })
-      const auth = res.data.data
-      setAccessToken(auth.accessToken)
-      setRefreshToken(auth.refreshToken)
-
-      const profileRes = await userService.getProfile()
-      const userData = profileRes.data.data
-      localStorage.setItem('user', JSON.stringify(userData))
-      setUser(userData)
-      return { success: true }
-    } catch (error) {
-      return { success: false, message: error.response?.data?.message || 'Đăng nhập thất bại' }
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  const register = useCallback(async (data) => {
-    setLoading(true)
-    clearAccessToken()
-    clearRefreshToken()
-    localStorage.removeItem('user')
-    setUser(null)
-    try {
-      const res = await authService.register(data)
-      const auth = res.data.data
-      setAccessToken(auth.accessToken)
-      setRefreshToken(auth.refreshToken)
-
-      const profileRes = await userService.getProfile()
-      const userData = profileRes.data.data
-      localStorage.setItem('user', JSON.stringify(userData))
-      setUser(userData)
-      return { success: true }
-    } catch (error) {
-      return { success: false, message: error.response?.data?.message || 'Đăng ký thất bái' }
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
   const logout = useCallback(async () => {
     try {
       await authService.logout()
     } catch {
-      // ignore
+      clearAccessToken()
     }
     clearAccessToken()
     clearRefreshToken()
@@ -125,15 +74,12 @@ export function AuthProvider({ children }) {
   const value = useMemo(() => ({
     user,
     setUser,
-    loading,
     initializing,
-    login,
-    register,
     logout,
     isAuthenticated: !!user,
     isAdmin: user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN',
     isSuperAdmin: user?.role === 'SUPER_ADMIN',
-  }), [user, setUser, loading, initializing, login, register, logout])
+  }), [user, setUser, initializing, logout])
 
   return (
     <AuthContext.Provider value={value}>
@@ -142,4 +88,5 @@ export function AuthProvider({ children }) {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => useContext(AuthContext)

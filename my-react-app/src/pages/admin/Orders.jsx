@@ -1,21 +1,16 @@
 import { useEffect, useState } from 'react'
-import { Table, Tag, Typography, Grid, Spin, message } from 'antd'
-import { ShoppingCartOutlined } from '@ant-design/icons'
+import { Table, Typography, Grid, Spin, message } from 'antd'
 import adminService from '../../api/adminService'
-import { useTheme } from '../../contexts/ThemeContext'
+import { PageHeader, StatusTag } from '../../components/ui'
 
-const { Title, Text } = Typography
+const { Text } = Typography
 const { useBreakpoint } = Grid
-
-const statusColors = { PENDING: 'gold', ACTIVE: 'green', CANCELLED: 'red', EXPIRED: 'default' }
-const statusLabels = { PENDING: 'Chờ thanh toán', ACTIVE: 'Hoạt động', CANCELLED: 'Đã hủy', EXPIRED: 'Hết hạn' }
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
   const [total, setTotal] = useState(0)
-  const { isDark } = useTheme()
   const screens = useBreakpoint()
   const isMobile = !screens.md
 
@@ -35,13 +30,13 @@ export default function AdminOrders() {
   }, [page])
 
   const columns = [
-    { title: 'Mã ĐH', dataIndex: 'id', key: 'id', width: 80, render: (id) => <Text copyable>#{id}</Text> },
-    { title: 'Người dùng', dataIndex: 'userId', key: 'userId', render: (uid) => `#${uid}` },
+    { title: 'Mã ĐH', dataIndex: 'id', key: 'id', width: 80, render: (id) => <Text copyable className="vh-mono">#{id}</Text> },
+    { title: 'Người dùng', dataIndex: 'userId', key: 'userId', render: (uid) => <span className="vh-mono">#{uid}</span> },
     { title: 'Gói', dataIndex: 'serverName', key: 'serverName' },
     { title: 'Bắt đầu', dataIndex: 'startDate', key: 'startDate', responsive: ['md'] },
     { title: 'Kết thúc', dataIndex: 'endDate', key: 'endDate', responsive: ['md'] },
-    { title: 'Tổng tiền', dataIndex: 'totalPrice', key: 'totalPrice', render: (p) => <Text strong style={{ color: '#1677ff' }}>{formatPrice(p)}₫</Text> },
-    { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (s) => <Tag color={statusColors[s] || 'default'}>{statusLabels[s] || s}</Tag> },
+    { title: 'Tổng tiền', dataIndex: 'totalPrice', key: 'totalPrice', render: (p) => <span className="vh-mono vh-text-primary" style={{ fontWeight: 600 }}>{formatPrice(p)}₫</span> },
+    { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (s) => <StatusTag status={s} type="order" /> },
   ]
 
   if (loading && orders.length === 0) {
@@ -50,9 +45,11 @@ export default function AdminOrders() {
 
   return (
     <div>
-      <Title level={isMobile ? 4 : 3} style={{ color: isDark ? '#e8e8e8' : '#1a1a2e', marginBottom: 16 }}>
-        <ShoppingCartOutlined /> Quản lý đơn hàng
-      </Title>
+      <PageHeader
+        eyebrow="Quản trị"
+        title="Quản lý đơn hàng"
+        subtitle="Theo dõi toàn bộ đơn hàng trong hệ thống."
+      />
       <Table
         columns={columns}
         dataSource={orders}

@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Table, Typography, Grid, Spin, message, Button, Space, Modal, Form, Input } from 'antd'
-import { AppstoreOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
+import { Table, Grid, Spin, message, Button, Space, Modal, Form, Input } from 'antd'
+import { EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import adminService from '../../api/adminService'
 import categoryService from '../../api/categoryService'
-import { useTheme } from '../../contexts/ThemeContext'
+import { PageHeader } from '../../components/ui'
 
-const { Title } = Typography
 const { useBreakpoint } = Grid
 
 export default function AdminCategories() {
@@ -15,7 +14,6 @@ export default function AdminCategories() {
   const [editing, setEditing] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm()
-  const { isDark } = useTheme()
   const screens = useBreakpoint()
   const isMobile = !screens.md
 
@@ -97,12 +95,12 @@ export default function AdminCategories() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Title level={isMobile ? 4 : 3} style={{ color: isDark ? '#e8e8e8' : '#1a1a2e', margin: 0 }}>
-          <AppstoreOutlined /> Quản lý danh mục
-        </Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>Thêm danh mục</Button>
-      </div>
+      <PageHeader
+        eyebrow="Quản trị"
+        title="Quản lý danh mục"
+        subtitle="Nhóm các gói hosting theo danh mục."
+        extra={<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>Thêm danh mục</Button>}
+      />
 
       <Table columns={columns} dataSource={categories} rowKey="id" loading={loading} size={isMobile ? 'small' : 'middle'} pagination={false} />
 

@@ -1,0 +1,72 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Frontend lint & build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: my-react-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: my-react-app/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+  backend:
+    name: Backend package
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: web-rental
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - run: mvn -B -DskipTests package
+
+  deploy:
+    name: Deploy to VPS
+    needs: [frontend, backend]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: SSH deploy (git pull + docker compose build)
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || '22' }}
+          script_stop: true
+          script: |
+            set -e
+            cd ${{ secrets.VPS_PATH || '~/myweb' }}
+            git fetch origin --prune
+            git checkout -f main
+            git reset --hard origin/main
+            docker compose up -d --build
+            docker image prune -f
+            docker compose ps

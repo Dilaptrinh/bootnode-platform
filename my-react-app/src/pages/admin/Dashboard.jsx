@@ -1,23 +1,31 @@
 import { useEffect, useState } from 'react'
-import { Card, Col, Row, Statistic, Typography, Grid, Spin } from 'antd'
+import { Col, Row, Grid, Spin } from 'antd'
 import {
   UserOutlined,
   CloudServerOutlined,
   ShoppingCartOutlined,
   DollarOutlined,
 } from '@ant-design/icons'
+import { useNavigate } from 'react-router-dom'
 import adminService from '../../api/adminService'
-import { useTheme } from '../../contexts/ThemeContext'
+import { PageHeader, StatCard } from '../../components/ui'
+import { voltTokens } from '../../theme/voltTheme'
 
-const { Title } = Typography
 const { useBreakpoint } = Grid
+
+const cards = [
+  { key: 'users', label: 'Người dùng', path: '/admin/users', icon: <UserOutlined />, accent: voltTokens.primaryDeep },
+  { key: 'servers', label: 'Gói hosting', path: '/admin/servers', icon: <CloudServerOutlined />, accent: voltTokens.inkStrong },
+  { key: 'orders', label: 'Đơn hàng', path: '/admin/orders', icon: <ShoppingCartOutlined />, accent: voltTokens.warning },
+  { key: 'payments', label: 'Thanh toán', path: '/admin/payments', icon: <DollarOutlined />, accent: voltTokens.inkStrong },
+]
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({ users: 0, servers: 0, orders: 0, payments: 0 })
   const [loading, setLoading] = useState(true)
-  const { isDark } = useTheme()
   const screens = useBreakpoint()
   const isMobile = !screens.md
+  const navigate = useNavigate()
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -49,30 +57,31 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <Title level={isMobile ? 4 : 3} style={{ color: isDark ? '#e8e8e8' : '#1a1a2e', marginBottom: 24 }}>
-        Admin Dashboard
-      </Title>
-      <Row gutter={[isMobile ? 12 : 24, isMobile ? 12 : 24]}>
-        <Col xs={12} lg={6}>
-          <Card styles={{ body: { padding: isMobile ? 16 : 24 } }} style={{ borderRadius: 12, background: isDark ? '#1f1f1f' : '#fff' }}>
-            <Statistic title="Người dùng" value={stats.users} prefix={<UserOutlined />} valueStyle={{ color: '#1677ff' }} />
-          </Card>
-        </Col>
-        <Col xs={12} lg={6}>
-          <Card styles={{ body: { padding: isMobile ? 16 : 24 } }} style={{ borderRadius: 12, background: isDark ? '#1f1f1f' : '#fff' }}>
-            <Statistic title="Gói hosting" value={stats.servers} prefix={<CloudServerOutlined />} valueStyle={{ color: '#52c41a' }} />
-          </Card>
-        </Col>
-        <Col xs={12} lg={6}>
-          <Card styles={{ body: { padding: isMobile ? 16 : 24 } }} style={{ borderRadius: 12, background: isDark ? '#1f1f1f' : '#fff' }}>
-            <Statistic title="Đơn hàng" value={stats.orders} prefix={<ShoppingCartOutlined />} valueStyle={{ color: '#faad14' }} />
-          </Card>
-        </Col>
-        <Col xs={12} lg={6}>
-          <Card styles={{ body: { padding: isMobile ? 16 : 24 } }} style={{ borderRadius: 12, background: isDark ? '#1f1f1f' : '#fff' }}>
-            <Statistic title="Thanh toán" value={stats.payments} prefix={<DollarOutlined />} valueStyle={{ color: '#722ed1' }} />
-          </Card>
-        </Col>
+      <PageHeader
+        eyebrow="Quản trị"
+        title="Admin Dashboard"
+        subtitle="Tổng quan nhanh các số liệu của hệ thống."
+      />
+      <Row gutter={[isMobile ? 12 : 20, isMobile ? 12 : 20]}>
+        {cards.map((card) => (
+          <Col xs={12} lg={6} key={card.key}>
+            <div
+              className="vh-card vh-card-link"
+              onClick={() => navigate(card.path)}
+              role="button"
+              tabIndex={0}
+              style={{ padding: 0 }}
+            >
+              <StatCard
+                label={card.label}
+                value={stats[card.key]}
+                icon={card.icon}
+                accent={card.accent}
+                style={{ border: 0, boxShadow: 'none' }}
+              />
+            </div>
+          </Col>
+        ))}
       </Row>
     </div>
   )

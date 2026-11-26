@@ -1,6 +1,7 @@
 package rentalhost.vn.web_rental.config;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -17,6 +18,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import rentalhost.vn.web_rental.security.JwtAuthenticationEntryPoint;
 import rentalhost.vn.web_rental.security.JwtAuthenticationFilter;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -29,6 +31,9 @@ public class SecurityConfig {
     private final JwtAuthenticationEntryPoint jwtEntryPoint;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
 
+    @Value("${app.cors.allowed-origins:https://bootnode.cloud,http://localhost:5173,http://localhost:4173}")
+    private String allowedOrigins;
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -37,44 +42,40 @@ public class SecurityConfig {
             .exceptionHandling(e -> e.authenticationEntryPoint(jwtEntryPoint))
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Swagger UI
+                // Swagger/OpenAPI only exists when SPRINGDOC_ENABLED=true (dev). In production
+                // springdoc generates no endpoints, so this allow-list cannot leak API docs.
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 
-                // OAuth2
                 .requestMatchers("/oauth2/**", "/login/oauth2/code/*").permitAll()
 
-                // Public
-                .requestMatchers("/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/refresh").permitAll()
+                .requestMatchers("/api/v1/auth/refresh").permitAll()
                 .requestMatchers("/api/v1/contact").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/announcements").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/faqs", "/api/v1/faqs/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/site-settings", "/api/v1/site-settings/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/servers/**", "/api/v1/categories/**").permitAll()
 
-                // MoMo IPN (public)
                 .requestMatchers("/api/v1/payments/momo/**").permitAll()
-
-                // PayOS webhook/callback (public)
                 .requestMatchers("/api/v1/payments/payos/**").permitAll()
 
-                // User
                 .requestMatchers("/api/v1/auth/logout", "/api/v1/users/**").authenticated()
                 .requestMatchers("/api/v1/orders/**", "/api/v1/payments/**").authenticated()
-
-                // Static site hosting
                 .requestMatchers("/api/v1/sites/**").authenticated()
 
-                // Admin sites
                 .requestMatchers("/api/v1/admin/sites/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
                 .requestMatchers("/api/v1/admin/announcements/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
+                .requestMatchers("/api/v1/admin/faqs", "/api/v1/admin/faqs/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
+                .requestMatchers("/api/v1/admin/site-settings", "/api/v1/admin/site-settings/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
 
-                // Admin
                 .requestMatchers("/api/v1/admin/servers/**", "/api/v1/admin/categories/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
                 .requestMatchers("/api/v1/admin/orders/**", "/api/v1/admin/payments/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
-                .requestMatchers(HttpMethod.GET, "/api/v1/admin/users/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
 
-                // Super Admin
+                // Sensitive user mutations must stay SUPER_ADMIN-only; declare them BEFORE the
+                // general users matcher so first-match-wins never widens them to ADMIN.
                 .requestMatchers(HttpMethod.PUT, "/api/v1/admin/users/*/role").hasRole("SUPER_ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/v1/admin/users/*/status").hasRole("SUPER_ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/v1/admin/users/*").hasRole("SUPER_ADMIN")
+                .requestMatchers("/api/v1/admin/users", "/api/v1/admin/users/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
 
                 .anyRequest().authenticated()
             )
@@ -89,7 +90,13 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("*"));
+        // Never combine wildcard origins with allowCredentials(true): that reflects any origin
+        // and lets third-party sites read credentialed responses (refresh-token cookie).
+        List<String> origins = Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+        config.setAllowedOrigins(origins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
