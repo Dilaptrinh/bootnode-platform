@@ -50,6 +50,14 @@ public class Server {
     @Column(nullable = false)
     private ServerStatus status;
 
+    /**
+     * Cho phép admin ẩn gói khỏi trang bán (không hiển thị, không cho đặt mua)
+     * mà không cần xóa hay đổi trạng thái vận hành. null được coi là hiển thị.
+     */
+    @Column(name = "visible")
+    @Builder.Default
+    private Boolean visible = Boolean.TRUE;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

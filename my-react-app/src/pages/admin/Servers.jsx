@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Table, Typography, Grid, Spin, message, Button, Space, Modal, Form, Input, InputNumber, Select } from 'antd'
+import { Table, Typography, Grid, Spin, message, Button, Space, Modal, Form, Input, InputNumber, Select, Switch, Tag } from 'antd'
 import { EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import adminService from '../../api/adminService'
 import categoryService from '../../api/categoryService'
@@ -51,24 +51,49 @@ export default function AdminServers() {
   const openCreate = () => {
     setEditing(null)
     form.resetFields()
+    form.setFieldsValue({ visible: true })
     setModalOpen(true)
   }
 
   const openEdit = (server) => {
     setEditing(server)
-    form.setFieldsValue(server)
+    form.setFieldsValue({ ...server, visible: server.visible !== false })
     setModalOpen(true)
+  }
+
+  const buildPayload = (values) => ({
+    name: values.name,
+    description: values.description,
+    categoryId: values.categoryId,
+    cpu: values.cpu,
+    ram: values.ram,
+    storage: values.storage,
+    bandwidth: values.bandwidth,
+    price: values.price,
+    quantity: values.quantity,
+    visible: values.visible,
+  })
+
+  const toggleVisible = async (server, checked) => {
+    try {
+      await adminService.updateServer(server.id, buildPayload({ ...server, visible: checked }))
+      message.success(checked ? 'Đã hiện gói' : 'Đã ẩn gói khỏi trang bán')
+      await refreshServers()
+    } catch (err) {
+      message.error(err.response?.data?.message || 'Cập nhật thất bại')
+    }
   }
 
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields()
       setSubmitting(true)
+      const payload = buildPayload(values)
       if (editing) {
-        await adminService.updateServer(editing.id, values)
+        await adminService.updateServer(editing.id, payload)
         message.success('Đã cập nhật gói hosting')
       } else {
-        await adminService.createServer(values)
+        await adminService.createServer(payload)
         message.success('Đã tạo gói hosting mới')
       }
       setModalOpen(false)
@@ -110,6 +135,21 @@ export default function AdminServers() {
       render: (rem, r) => <Text className="vh-mono">{r.quantity != null ? `${rem ?? 0} / ${r.quantity}` : '--'}</Text>,
     },
     { title: 'Danh mục', dataIndex: 'categoryName', key: 'categoryName', render: (v) => v || '--', responsive: ['lg'] },
+    {
+      title: 'Hiển thị', dataIndex: 'visible', key: 'visible',
+      render: (visible, r) => (
+        <Space size={6}>
+          <Switch
+            checked={visible !== false}
+            onChange={(checked) => toggleVisible(r, checked)}
+            size="small"
+          />
+          <Tag color={visible !== false ? 'green' : 'default'}>
+            {visible !== false ? 'Đang bán' : 'Đã ẩn'}
+          </Tag>
+        </Space>
+      ),
+    },
     {
       title: '', key: 'actions', render: (_, r) => (
         <Space size={4}>
@@ -180,6 +220,9 @@ export default function AdminServers() {
           </Form.Item>
           <Form.Item name="quantity" label="Số lượng (giới hạn)" rules={[{ required: true, message: 'Vui lòng nhập số lượng' }]}>
             <InputNumber style={{ width: '100%' }} min={1} placeholder="VD: 10" />
+          </Form.Item>
+          <Form.Item name="visible" label="Hiển thị trên trang bán" valuePropName="checked">
+            <Switch checkedChildren="Đang bán" unCheckedChildren="Đã ẩn" />
           </Form.Item>
         </Form>
       </Modal>

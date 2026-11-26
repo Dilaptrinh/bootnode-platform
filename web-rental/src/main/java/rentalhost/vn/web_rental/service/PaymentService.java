@@ -27,6 +27,7 @@ import rentalhost.vn.web_rental.repository.PaymentRepository;
 import rentalhost.vn.web_rental.repository.ServerRepository;
 
 import java.math.BigDecimal;
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -124,9 +125,9 @@ public class PaymentService {
         String orderId = "ORDER_" + order.getId() + "_" + System.currentTimeMillis();
         String orderInfo = "Thanh toan thue server #" + order.getId();
 
-        String resolvedReturnUrl = returnUrl != null
-                ? returnUrl
-                : paymentConfig.getMomo().getReturnUrl();
+        // Không tin returnUrl do client gửi: chỉ chấp nhận same-origin với cấu hình,
+        // tránh open-redirect/lừa đảo qua URL chuyển hướng sau thanh toán.
+        String resolvedReturnUrl = resolveReturnUrl(returnUrl);
 
         MoMoPaymentGateway.MomoCreatePaymentResponse momoResponse = moMoPaymentGateway.createPayment(
                 orderId,
@@ -218,6 +219,14 @@ public class PaymentService {
             }
             // PayOS báo thanh toán thành công khi code == "00"
             if ("00".equals(code)) {
+                // Xác minh số tiền khớp với đơn trước khi cấp host (chống giả mạo số tiền).
+                long webhookAmount = data.path("amount").asLong(-1L);
+                if (payment.getAmount() == null
+                        || webhookAmount != payment.getAmount().longValue()) {
+                    log.warn("PayOS webhook amount mismatch orderCode={} webhookAmount={} paymentAmount={}",
+                            orderCode, webhookAmount, payment.getAmount());
+                    return "{\"error\":\"Amount mismatch\"}";
+                }
                 payment.setStatus(PaymentStatus.SUCCESS);
                 if (transactionId != null && !transactionId.isBlank()) {
                     payment.setTransactionId(transactionId);
@@ -243,6 +252,33 @@ public class PaymentService {
             log.error("PayOS webhook parse error", e);
             return "{\"error\":\"Invalid data\"}";
         }
+    }
+
+    /**
+     * Chỉ cho phép returnUrl cùng host với returnUrl cấu hình (hoặc localhost khi dev).
+     * Ngăn kẻ tấn công dùng link thanh toán để chuyển hướng người dùng sang site lạ.
+     */
+    private String resolveReturnUrl(String returnUrl) {
+        String fallback = paymentConfig.getMomo().getReturnUrl();
+        if (returnUrl == null || returnUrl.isBlank()) {
+            return fallback;
+        }
+        try {
+            URI candidate = URI.create(returnUrl);
+            URI allowed = URI.create(fallback);
+            String host = candidate.getHost();
+            boolean sameHost = host != null && allowed.getHost() != null
+                    && host.equalsIgnoreCase(allowed.getHost());
+            boolean localhost = "localhost".equalsIgnoreCase(host) || "127.0.0.1".equals(host);
+            boolean secureScheme = "https".equalsIgnoreCase(candidate.getScheme()) || localhost;
+            if ((sameHost || localhost) && secureScheme) {
+                return returnUrl;
+            }
+        } catch (Exception ignored) {
+            // rơi xuống fallback
+        }
+        log.warn("Rejected untrusted returnUrl: {}", returnUrl);
+        return fallback;
     }
 
     private void activateOrder(Order order) {
@@ -352,6 +388,33 @@ public class PaymentService {
         }
 
         if (resultCode == 0) {
+            // Xác minh dữ liệu IPN khớp với giao dịch đã tạo trước khi cấp host.
+            try {
+                String ipnAmount = params.get("amount");
+                if (ipnAmount == null
+                        || payment.getAmount() == null
+                        || new BigDecimal(ipnAmount).compareTo(payment.getAmount()) != 0) {
+                    log.warn("MoMo IPN amount mismatch requestId={} ipnAmount={} paymentAmount={}",
+                            params.get("requestId"), ipnAmount, payment.getAmount());
+                    return "{\"RspCode\":\"97\",\"Message\":\"Invalid amount\"}";
+                }
+            } catch (NumberFormatException e) {
+                return "{\"RspCode\":\"97\",\"Message\":\"Invalid amount\"}";
+            }
+            String ipnOrderId = params.get("orderId");
+            if (ipnOrderId != null && payment.getTransactionId() != null
+                    && !ipnOrderId.equals(payment.getTransactionId())) {
+                log.warn("MoMo IPN orderId mismatch requestId={} ipnOrderId={} storedOrderId={}",
+                        params.get("requestId"), ipnOrderId, payment.getTransactionId());
+                return "{\"RspCode\":\"98\",\"Message\":\"Invalid orderId\"}";
+            }
+            String ipnPartnerCode = params.get("partnerCode");
+            if (ipnPartnerCode != null
+                    && !ipnPartnerCode.equals(paymentConfig.getMomo().getPartnerCode())) {
+                log.warn("MoMo IPN partnerCode mismatch requestId={} partnerCode={}",
+                        params.get("requestId"), ipnPartnerCode);
+                return "{\"RspCode\":\"98\",\"Message\":\"Invalid partner\"}";
+            }
             payment.setStatus(PaymentStatus.SUCCESS);
             payment.setTransactionId(params.get("transId") != null
                     ? params.get("transId") : payment.getTransactionId());

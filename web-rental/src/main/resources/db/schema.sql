@@ -41,6 +41,7 @@ CREATE TABLE servers (
     price           DECIMAL(15,2)   NOT NULL,
     quantity        INT             DEFAULT NULL,
     status          ENUM('AVAILABLE','RENTED','MAINTENANCE') NOT NULL DEFAULT 'AVAILABLE',
+    visible         BOOLEAN         NOT NULL DEFAULT TRUE,
     created_at      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT pk_servers PRIMARY KEY (id),

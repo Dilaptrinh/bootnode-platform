@@ -47,6 +47,9 @@ public class ServerDTO {
         @Schema(example = "10", description = "Số lượng giới hạn (số slot có thể bán)")
         @NotNull @Positive
         private Integer quantity;
+
+        @Schema(example = "true", description = "Hiển thị gói trên trang bán (false = ẩn)")
+        private Boolean visible;
     }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
@@ -65,5 +68,6 @@ public class ServerDTO {
         private Integer quantity;
         private Long remaining;
         private String status;
+        private Boolean visible;
     }
 }

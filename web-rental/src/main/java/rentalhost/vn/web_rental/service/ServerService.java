@@ -69,6 +69,10 @@ public class ServerService {
     public ServerDTO.ServerResponse getById(Long id) {
         Server server = serverRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Server", id));
+        // Không lộ chi tiết gói đã bị ẩn ra endpoint công khai.
+        if (Boolean.FALSE.equals(server.getVisible())) {
+            throw new ResourceNotFoundException("Server", id);
+        }
         return toResponse(server);
     }
 
@@ -98,6 +102,7 @@ public class ServerService {
                 .price(request.getPrice())
                 .quantity(request.getQuantity())
                 .status(ServerStatus.AVAILABLE)
+                .visible(request.getVisible() == null ? Boolean.TRUE : request.getVisible())
                 .build();
         server = serverRepository.save(server);
         return toResponse(server);
@@ -124,6 +129,9 @@ public class ServerService {
         server.setBandwidth(request.getBandwidth());
         server.setPrice(request.getPrice());
         server.setQuantity(request.getQuantity());
+        if (request.getVisible() != null) {
+            server.setVisible(request.getVisible());
+        }
         server = serverRepository.save(server);
         return toResponse(server);
     }

@@ -37,6 +37,9 @@ public class PublicCatalogService {
                 List.of(ServerStatus.AVAILABLE, ServerStatus.RENTED));
         Map<Long, Long> activeByServer = activeCountByServer();
         return servers.stream()
+                // Gói bị admin ẩn (visible=false) không xuất hiện trên trang bán.
+                // null được coi là hiển thị để tương thích dữ liệu cũ.
+                .filter(server -> !Boolean.FALSE.equals(server.getVisible()))
                 .map(server -> toResponse(server, activeByServer))
                 .filter(resp -> resp.getQuantity() == null
                         || (resp.getRemaining() != null && resp.getRemaining() > 0))

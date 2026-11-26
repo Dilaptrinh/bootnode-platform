@@ -50,6 +50,10 @@ public class OrderService {
         Server server = serverRepository.findByIdForUpdate(request.getServerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Server", request.getServerId()));
 
+        if (Boolean.FALSE.equals(server.getVisible())) {
+            throw new BadRequestException("Gói này hiện không bán");
+        }
+
         if (server.getStatus() != ServerStatus.AVAILABLE) {
             throw new BadRequestException("Server is not available");
         }

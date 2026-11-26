@@ -155,7 +155,12 @@ public class SiteStorageService {
     private long copyTree(Path src, Path staging, long sizeSoFar, long maxBytes) throws IOException {
         long total = sizeSoFar;
         try (Stream<Path> stream = Files.walk(src)) {
-            List<Path> paths = stream.filter(p -> !Files.isDirectory(p)).toList();
+            // Bỏ qua symbolic link: repo GitHub có thể chứa symlink trỏ tới file ngoài
+            // (vd /etc/passwd) khiến nội dung bị copy lộ ra website công khai.
+            List<Path> paths = stream
+                    .filter(p -> !Files.isSymbolicLink(p))
+                    .filter(p -> !Files.isDirectory(p, LinkOption.NOFOLLOW_LINKS))
+                    .toList();
             for (Path path : paths) {
                 Path rel = src.relativize(path);
                 String relStr = rel.toString().replace('\\', '/');

@@ -80,6 +80,12 @@ SET @ddl = IF(
 PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 SET @ddl = IF(
+    (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'servers' AND COLUMN_NAME = 'visible') = 0,
+    'ALTER TABLE servers ADD COLUMN visible BOOLEAN NOT NULL DEFAULT TRUE',
+    'SELECT 1');
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @ddl = IF(
     (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sites' AND COLUMN_NAME = 'github_url') = 0,
     'ALTER TABLE sites ADD COLUMN github_url VARCHAR(500) DEFAULT NULL',
     'SELECT 1');
