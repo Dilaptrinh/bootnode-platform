@@ -7,9 +7,9 @@ import { PageHeader } from '../../components/ui'
 const { TextArea } = Input
 
 const FIELDS = [
-  { key: 'site.brand_name', label: 'Tên thương hiệu' },
-  { key: 'home.hero_title', label: 'Tiêu đề hero' },
-  { key: 'home.hero_subtitle', label: 'Mô tả hero', multiline: true },
+  { key: 'site.brand_name', label: 'Tên thương hiệu', required: true },
+  { key: 'home.hero_title', label: 'Tiêu đề hero', required: true },
+  { key: 'home.hero_subtitle', label: 'Mô tả hero', multiline: true, required: true },
   { key: 'contact.email', label: 'Email liên hệ' },
   { key: 'contact.phone', label: 'Hotline' },
   { key: 'contact.address', label: 'Địa chỉ' },
@@ -43,8 +43,18 @@ export default function AdminSiteSettings() {
     setSaving(true)
     try {
       const updates = FIELDS
-        .filter((f) => values[f.key] !== undefined && values[f.key] !== null)
-        .map((f) => siteSettingService.update(f.key, String(values[f.key]).trim()))
+        .map((f) => ({
+          key: f.key,
+          value: values[f.key] === undefined || values[f.key] === null
+            ? ''
+            : String(values[f.key]).trim(),
+        }))
+        .filter((item) => item.value !== '')
+        .map((item) => siteSettingService.update(item.key, item.value))
+      if (updates.length === 0) {
+        message.info('Không có thay đổi để lưu')
+        return
+      }
       await Promise.all(updates)
       await reload()
       message.success('Đã lưu cài đặt')
@@ -78,10 +88,13 @@ export default function AdminSiteSettings() {
               key={field.key}
               name={field.key}
               label={field.label}
-              rules={field.numeric ? [{
-                pattern: /^[1-9]\d*$/,
-                message: 'Vui lòng nhập số nguyên dương',
-              }] : []}
+              rules={[
+                ...(field.required ? [{ required: true, message: 'Trường này không được để trống' }] : []),
+                ...(field.numeric ? [{
+                  pattern: /^[1-9]\d*$/,
+                  message: 'Vui lòng nhập số nguyên dương',
+                }] : []),
+              ]}
             >
               {field.multiline ? <TextArea rows={2} /> : <Input />}
             </Form.Item>
