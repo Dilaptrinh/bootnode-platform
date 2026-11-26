@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Card, Form, Input, Button, Spin, message } from 'antd'
+import { Card, Form, Input, Button, Spin, message, Divider, Typography } from 'antd'
 import siteSettingService from '../../api/siteSettingService'
 import { useSiteSettings } from '../../contexts/siteSettingsContext'
 import { PageHeader } from '../../components/ui'
 
 const { TextArea } = Input
+const { Text } = Typography
 
-const FIELDS = [
+const CONTENT_FIELDS = [
   { key: 'site.brand_name', label: 'Tên thương hiệu', required: true },
   { key: 'home.hero_title', label: 'Tiêu đề hero', required: true },
   { key: 'home.hero_subtitle', label: 'Mô tả hero', multiline: true, required: true },
@@ -14,9 +15,33 @@ const FIELDS = [
   { key: 'contact.phone', label: 'Hotline' },
   { key: 'contact.address', label: 'Địa chỉ' },
   { key: 'contact.hours', label: 'Giờ làm việc' },
-  { key: 'deploy.allowed_domain', label: 'Domain được deploy (cách nhau bởi dấu phẩy)' },
-  { key: 'deploy.max_size_mb', label: 'Dung lượng tối đa (MB)', numeric: true },
 ]
+
+const DEPLOY_FIELDS = [
+  {
+    key: 'deploy.allowed_domain',
+    label: 'Domain email được phép deploy',
+    hint: 'Chỉ tài khoản có email thuộc các domain này mới được deploy web tĩnh. Cách nhau bởi dấu phẩy, ví dụ: student.ctu.edu.vn',
+  },
+  {
+    key: 'deploy.max_size_mb',
+    label: 'Dung lượng tối đa mỗi website (MB)',
+    hint: 'Giới hạn tổng dung lượng file khi deploy (áp dụng cho cả tải thư mục và GitHub).',
+    numeric: true,
+  },
+]
+
+const ALL_FIELDS = [...CONTENT_FIELDS, ...DEPLOY_FIELDS]
+
+function fieldRules(field) {
+  return [
+    ...(field.required ? [{ required: true, message: 'Trường này không được để trống' }] : []),
+    ...(field.numeric ? [{
+      pattern: /^[1-9]\d*$/,
+      message: 'Vui lòng nhập số nguyên dương',
+    }] : []),
+  ]
+}
 
 export default function AdminSiteSettings() {
   const [form] = Form.useForm()
@@ -42,7 +67,7 @@ export default function AdminSiteSettings() {
     const values = await form.validateFields()
     setSaving(true)
     try {
-      const updates = FIELDS
+      const updates = ALL_FIELDS
         .map((f) => ({
           key: f.key,
           value: values[f.key] === undefined || values[f.key] === null
@@ -65,6 +90,18 @@ export default function AdminSiteSettings() {
     }
   }
 
+  const renderFields = (fields) => fields.map((field) => (
+    <Form.Item
+      key={field.key}
+      name={field.key}
+      label={field.label}
+      extra={field.hint}
+      rules={fieldRules(field)}
+    >
+      {field.multiline ? <TextArea rows={2} /> : <Input />}
+    </Form.Item>
+  ))
+
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: 80 }}>
@@ -78,27 +115,25 @@ export default function AdminSiteSettings() {
       <PageHeader
         eyebrow="Quản trị"
         title="Cài đặt website"
-        subtitle="Thông tin liên hệ và nội dung hero hiển thị trên website."
+        subtitle="Nội dung hiển thị trên website và cấu hình cho tính năng deploy web tĩnh."
       />
 
       <Card style={{ borderRadius: 8 }} styles={{ body: { padding: 24 } }}>
         <Form form={form} layout="vertical" requiredMark={false}>
-          {FIELDS.map((field) => (
-            <Form.Item
-              key={field.key}
-              name={field.key}
-              label={field.label}
-              rules={[
-                ...(field.required ? [{ required: true, message: 'Trường này không được để trống' }] : []),
-                ...(field.numeric ? [{
-                  pattern: /^[1-9]\d*$/,
-                  message: 'Vui lòng nhập số nguyên dương',
-                }] : []),
-              ]}
-            >
-              {field.multiline ? <TextArea rows={2} /> : <Input />}
-            </Form.Item>
-          ))}
+          <Text strong>Nội dung hiển thị</Text>
+          <Text type="secondary" style={{ display: 'block', marginBottom: 16, fontSize: 13 }}>
+            Hero trang chủ, tên thương hiệu và thông tin liên hệ ở header/footer.
+          </Text>
+          {renderFields(CONTENT_FIELDS)}
+
+          <Divider style={{ margin: '8px 0 20px' }} />
+
+          <Text strong>Cấu hình triển khai (không hiển thị trên hero)</Text>
+          <Text type="secondary" style={{ display: 'block', marginBottom: 16, fontSize: 13 }}>
+            Dùng để kiểm soát ai được deploy và dung lượng tối đa của mỗi website tĩnh.
+          </Text>
+          {renderFields(DEPLOY_FIELDS)}
+
           <Button type="primary" loading={saving} onClick={handleSubmit}>
             Lưu cài đặt
           </Button>
