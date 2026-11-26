@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Card, Button, Typography, Tag, Space, Grid, Result, DatePicker, Form, message, Descriptions, Radio, Divider } from 'antd'
+import { Card, Button, Typography, Space, Grid, Result, DatePicker, Form, message, Descriptions, Radio, Divider } from 'antd'
 import {
   CheckCircleOutlined,
   CloudServerOutlined,
@@ -8,21 +8,19 @@ import {
   DashboardOutlined,
   CalendarOutlined,
   WalletOutlined,
-  BankOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import orderService from '../api/orderService'
 import paymentService from '../api/paymentService'
-import { useTheme } from '../contexts/ThemeContext'
 import { useAuth } from '../contexts/AuthContext'
+import { PageHeader } from '../components/ui'
 
-const { Title, Text } = Typography
+const { Text } = Typography
 const { useBreakpoint } = Grid
 
 export default function OrderConfirm() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { isDark } = useTheme()
   const { isAuthenticated } = useAuth()
   const screens = useBreakpoint()
   const isMobile = !screens.md
@@ -122,52 +120,34 @@ export default function OrderConfirm() {
 
   if (orderResult) {
     return (
-      <div style={{ maxWidth: 640, margin: '0 auto' }}>
-        <Card
-          style={{
-            borderRadius: 16,
-            background: isDark ? '#1f1f1f' : '#fff',
-            border: `1px solid ${isDark ? '#303030' : '#f0f0f0'}`,
-          }}
-          styles={{ body: { padding: isMobile ? 24 : 40 } }}
-        >
-          <div style={{ textAlign: 'center', marginBottom: 24 }}>
-            <Title level={isMobile ? 4 : 3} style={{ margin: 0, color: isDark ? '#e8e8e8' : '#1a1a2e' }}>
-              Thanh toán đơn hàng
-            </Title>
-            <Text style={{ color: isDark ? '#8c8c8c' : '#6b7280', display: 'block', marginTop: 4 }}>
-              Vui lòng thanh toán ngay để kích hoạt dịch vụ
-            </Text>
-          </div>
+      <div style={{ maxWidth: 660, margin: '0 auto' }}>
+        <PageHeader eyebrow="Thanh toán" title="Thanh toán đơn hàng" subtitle="Vui lòng thanh toán ngay để kích hoạt dịch vụ." />
 
+        <Card style={{ borderRadius: 8 }} styles={{ body: { padding: isMobile ? 24 : 32 } }}>
           <Descriptions
             column={1}
             size={isMobile ? 'small' : 'default'}
-            styles={{
-              label: { color: isDark ? '#8c8c8c' : '#6b7280' },
-              content: { color: isDark ? '#e8e8e8' : '#1a1a2e' },
-            }}
             bordered
           >
             <Descriptions.Item label="Mã đơn hàng">
-              <Text copyable style={{ color: '#1677ff', fontWeight: 600 }}>#{orderResult.id}</Text>
+              <Text copyable className="vh-mono vh-text-primary" style={{ fontWeight: 600 }}>#{orderResult.id}</Text>
             </Descriptions.Item>
             <Descriptions.Item label="Gói">{orderResult.serverName}</Descriptions.Item>
             <Descriptions.Item label="Ngày bắt đầu">{orderResult.startDate}</Descriptions.Item>
             <Descriptions.Item label="Ngày kết thúc">{orderResult.endDate}</Descriptions.Item>
             <Descriptions.Item label="Tổng tiền">
-              <Text strong style={{ fontSize: 18, color: '#1677ff' }}>
+              <span className="vh-mono vh-text-primary" style={{ fontSize: 18, fontWeight: 600 }}>
                 {formatPrice(orderResult.totalPrice)}₫
-              </Text>
+              </span>
             </Descriptions.Item>
           </Descriptions>
 
-          <Divider style={{ margin: '24px 0', borderColor: isDark ? '#303030' : '#f0f0f0' }} />
+          <Divider style={{ margin: '24px 0' }} />
 
           <div style={{ marginBottom: 20 }}>
-            <Title level={5} style={{ color: isDark ? '#e8e8e8' : '#1a1a2e', margin: '0 0 12px 0' }}>
+            <h3 className="vh-h3" style={{ fontSize: 16, fontWeight: 600, margin: '0 0 12px 0' }}>
               <WalletOutlined style={{ marginRight: 8 }} />Chọn phương thức thanh toán
-            </Title>
+            </h3>
             <Radio.Group
               value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value)}
@@ -181,20 +161,20 @@ export default function OrderConfirm() {
                     hoverable
                     style={{
                       cursor: 'pointer',
-                      borderRadius: 10,
+                      borderRadius: 8,
                       border: paymentMethod === m.value
-                        ? '2px solid #1677ff'
-                        : `1px solid ${isDark ? '#303030' : '#e8e8e8'}`,
+                        ? '1px solid var(--vh-primary)'
+                        : '1px solid var(--vh-hairline)',
                       background: paymentMethod === m.value
-                        ? (isDark ? '#111d2e' : '#f0f5ff')
-                        : (isDark ? '#1f1f1f' : '#fff'),
+                        ? 'var(--vh-canvas-soft)'
+                        : 'var(--vh-canvas)',
                     }}
                     onClick={() => setPaymentMethod(m.value)}
                   >
                     <Radio value={m.value} style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
                       <Space>
                         {m.icon}
-                        <Text strong style={{ color: isDark ? '#e8e8e8' : '#1a1a2e' }}>{m.label}</Text>
+                        <Text strong>{m.label}</Text>
                       </Space>
                     </Radio>
                   </Card>
@@ -206,16 +186,16 @@ export default function OrderConfirm() {
           <Button
             type="primary"
             block
-            size={isMobile ? 'middle' : 'large'}
+            size="large"
             loading={paying}
             icon={<WalletOutlined />}
             onClick={handlePay}
-            style={{ height: 48, fontSize: 16, borderRadius: 10, marginBottom: 16 }}
+            style={{ height: 48, fontSize: 16, marginBottom: 16 }}
           >
             Thanh toán {formatPrice(orderResult.totalPrice)}₫
           </Button>
 
-          <Space style={{ width: '100%', justifyContent: 'center' }} size={12}>
+          <Space style={{ width: '100%', justifyContent: 'center' }} size={12} wrap>
             <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/hosting')}>
               Tiếp tục mua
             </Button>
@@ -229,46 +209,26 @@ export default function OrderConfirm() {
   }
 
   return (
-    <div style={{ maxWidth: 640, margin: '0 auto' }}>
-      <Card
-        style={{
-          borderRadius: 16,
-          background: isDark ? '#1f1f1f' : '#fff',
-          border: `1px solid ${isDark ? '#303030' : '#f0f0f0'}`,
-        }}
-        styles={{ body: { padding: isMobile ? 24 : 40 } }}
-      >
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <CloudServerOutlined style={{ fontSize: 48, color: '#1677ff', marginBottom: 12 }} />
-          <Title level={isMobile ? 4 : 3} style={{ margin: 0, color: isDark ? '#e8e8e8' : '#1a1a2e' }}>
-            Xác nhận đặt gói {server.name}
-          </Title>
-        </div>
+    <div style={{ maxWidth: 660, margin: '0 auto' }}>
+      <PageHeader
+        eyebrow="Đặt gói"
+        title={`Xác nhận đặt gói ${server.name}`}
+        subtitle="Chọn thời gian thuê để xem tổng chi phí trước khi đặt hàng."
+      />
 
-        <div style={{
-          background: isDark ? '#141414' : '#f9fafb',
-          borderRadius: 12,
-          padding: isMobile ? 16 : 24,
-          marginBottom: 24,
-        }}>
-          <Descriptions
-            column={1}
-            size={isMobile ? 'small' : 'default'}
-            styles={{
-              label: { color: isDark ? '#8c8c8c' : '#6b7280' },
-              content: { color: isDark ? '#e8e8e8' : '#1a1a2e' },
-            }}
-          >
-            <Descriptions.Item label="Gói">{server.name}</Descriptions.Item>
+      <Card style={{ borderRadius: 8 }} styles={{ body: { padding: isMobile ? 24 : 32 } }}>
+        <div className="vh-card-soft" style={{ marginBottom: 24 }}>
+          <Descriptions column={1} size={isMobile ? 'small' : 'default'}>
+            <Descriptions.Item label="Gói"><CloudServerOutlined /> {server.name}</Descriptions.Item>
             {server.categoryName && <Descriptions.Item label="Danh mục">{server.categoryName}</Descriptions.Item>}
             <Descriptions.Item label="CPU">{server.cpu}</Descriptions.Item>
             <Descriptions.Item label="RAM">{server.ram}</Descriptions.Item>
             <Descriptions.Item label="Storage">{server.storage}</Descriptions.Item>
             <Descriptions.Item label="Bandwidth">{server.bandwidth}</Descriptions.Item>
             <Descriptions.Item label="Giá">
-              <Text strong style={{ fontSize: 16, color: '#1677ff' }}>
-                {formatPrice(server.price)}₫<Text style={{ fontSize: 13, color: '#8c8c8c' }}>/ngày</Text>
-              </Text>
+              <span className="vh-mono vh-text-primary" style={{ fontSize: 16, fontWeight: 600 }}>
+                {formatPrice(server.price)}₫<span className="vh-muted" style={{ fontSize: 13 }}>/ngày</span>
+              </span>
             </Descriptions.Item>
           </Descriptions>
         </div>
@@ -281,7 +241,7 @@ export default function OrderConfirm() {
           initialValues={{ startDate: dayjs() }} // Ngày bắt đầu mặc định = hôm nay, vẫn sửa được
           onValuesChange={handleDateChange}
         >
-          <Space size={isMobile ? 12 : 16} style={{ width: '100%' }} align="start">
+          <Space size={isMobile ? 12 : 16} style={{ width: '100%' }} align="start" wrap>
             <Form.Item
               name="startDate"
               label="Ngày bắt đầu (From)"
@@ -316,16 +276,10 @@ export default function OrderConfirm() {
           </Space>
 
           {totalPrice > 0 && (
-            <div style={{
-              background: isDark ? '#111d2e' : '#f0f5ff',
-              borderRadius: 10,
-              padding: isMobile ? 14 : 18,
-              marginBottom: 24,
-              textAlign: 'center',
-            }}>
-              <Text style={{ color: isDark ? '#8c8c8c' : '#6b7280', fontSize: 13 }}>
+            <div className="vh-card-soft" style={{ marginBottom: 24, textAlign: 'center' }}>
+              <Text className="vh-muted" style={{ fontSize: 13 }}>
                 {totalDays} ngày × {formatPrice(server.price)}₫ = </Text>
-              <Text strong style={{ fontSize: 24, color: '#1677ff' }}>{formatPrice(totalPrice)}₫</Text>
+              <span className="vh-mono vh-text-primary" style={{ fontSize: 24, fontWeight: 600 }}>{formatPrice(totalPrice)}₫</span>
             </div>
           )}
 
@@ -334,7 +288,7 @@ export default function OrderConfirm() {
               type="primary"
               htmlType="submit"
               block
-              size={isMobile ? 'middle' : 'large'}
+              size="large"
               loading={submitting}
               icon={<CheckCircleOutlined />}
             >

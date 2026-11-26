@@ -1,81 +1,67 @@
-import { Card, Row, Col, Typography, Space, Grid } from 'antd'
+import { Card, Row, Col, Grid } from 'antd'
 import {
   CloudServerOutlined,
   TeamOutlined,
   TrophyOutlined,
   HeartOutlined,
 } from '@ant-design/icons'
-import { useTheme } from '../contexts/ThemeContext'
+import { PageHeader } from '../components/ui'
 
-const { Title, Paragraph } = Typography
 const { useBreakpoint } = Grid
 
 const values = [
-  { icon: <CloudServerOutlined />, title: 'Công nghệ', desc: 'Hệ thống server hiện đại, SSD NVMe, băng thông 1Gbps' },
-  { icon: <TeamOutlined />, title: 'Đội ngũ', desc: 'Kỹ sư giàu kinh nghiệm, hỗ trợ tận tâm 24/7' },
-  { icon: <TrophyOutlined />, title: 'Chất lượng', desc: 'Cam kết uptime 99.9%, đền bù 10x khi vi phạm' },
-  { icon: <HeartOutlined />, title: 'Khách hàng', desc: 'Hơn 15.000 khách hàng tin tưởng và sử dụng dịch vụ' },
+  { icon: <CloudServerOutlined />, title: 'Hai dịch vụ rõ ràng', desc: 'Triển khai web tĩnh miễn phí cho sinh viên CTU và thuê hosting trả phí theo cấu hình thực tế.' },
+  { icon: <TeamOutlined />, title: 'Hỗ trợ trực tiếp', desc: 'Liên hệ qua email và hotline trong giờ làm việc để được hỗ trợ.' },
+  { icon: <TrophyOutlined />, title: 'Thông tin minh bạch', desc: 'Giá, cấu hình và số chỗ còn lại của từng gói được hiển thị trực tiếp từ hệ thống.' },
+  { icon: <HeartOutlined />, title: 'Dành cho sinh viên', desc: 'Ưu tiên trải nghiệm đơn giản cho sinh viên Đại học Cần Thơ.' },
 ]
 
 export default function About() {
-  const { isDark } = useTheme()
   const screens = useBreakpoint()
   const isMobile = !screens.md
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto' }}>
-      <div style={{ textAlign: 'center', padding: isMobile ? '20px 0' : '40px 0' }}>
-        <CloudServerOutlined style={{ fontSize: isMobile ? 40 : 64, color: '#1677ff', marginBottom: 12 }} />
-        <Title level={isMobile ? 3 : 2} style={{ color: isDark ? '#e8e8e8' : '#1a1a2e' }}>
-          Về HireHost
-        </Title>
-        <Paragraph style={{
-          fontSize: isMobile ? 14 : 16,
-          color: isDark ? '#8c8c8c' : '#6b7280',
-          maxWidth: 600,
-          margin: '0 auto',
-          padding: '0 16px',
-        }}>
-          HireHost là nền tảng cung cấp dịch vụ hosting hàng đầu, giúp hàng nghìn website
-          vận hành ổn định, an toàn và tốc độ cao.
-        </Paragraph>
-      </div>
+    <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+      <PageHeader
+        eyebrow="Về chúng tôi"
+        title="Về HireHost"
+        subtitle="HireHost cung cấp hai dịch vụ tách biệt: triển khai web tĩnh miễn phí cho sinh viên CTU và thuê hosting trả phí cho dự án lớn hơn."
+      />
 
-      <Row gutter={[isMobile ? 12 : 24, isMobile ? 12 : 24]}>
-        {values.map((val, i) => (
-          <Col xs={24} md={8} lg={6} key={i}>
+      <Row gutter={[isMobile ? 12 : 20, isMobile ? 12 : 20]}>
+        {values.map((val) => (
+          <Col xs={24} sm={12} lg={12} key={val.title}>
             <Card
-              styles={{ body: { padding: isMobile ? 16 : 24 } }}
-              style={{
-                borderRadius: 12,
-                background: isDark ? '#1f1f1f' : '#fff',
-                border: `1px solid ${isDark ? '#303030' : '#f0f0f0'}`,
-              }}
+              styles={{ body: { padding: isMobile ? 20 : 24 } }}
+              style={{ height: '100%', borderRadius: 8 }}
             >
-              <Space size={isMobile ? 12 : 16} align="start">
-                <div style={{
-                  width: isMobile ? 44 : 56,
-                  height: isMobile ? 44 : 56,
-                  borderRadius: 12,
-                  background: isDark ? '#1677ff1a' : '#f0f5ff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: isMobile ? 20 : 24,
-                  color: '#1677ff',
-                  flexShrink: 0,
-                }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+                <div
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 8,
+                    background: 'var(--vh-canvas-soft)',
+                    border: '1px solid var(--vh-hairline)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 20,
+                    color: 'var(--vh-link)',
+                    flexShrink: 0,
+                  }}
+                >
                   {val.icon}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <Title level={isMobile ? 5 : 5} style={{ margin: 0, fontSize: isMobile ? 14 : 16, color: isDark ? '#e8e8e8' : '#1a1a2e' }}>
+                  <h3 className="vh-h3" style={{ fontSize: 16, fontWeight: 600, marginBottom: 4 }}>
                     {val.title}
-                  </Title>
-                  <Paragraph style={{ margin: '4px 0 0', fontSize: isMobile ? 13 : 14, color: isDark ? '#8c8c8c' : '#6b7280' }}>
+                  </h3>
+                  <p className="vh-muted" style={{ margin: 0, fontSize: 14 }}>
                     {val.desc}
-                  </Paragraph>
+                  </p>
                 </div>
-              </Space>
+              </div>
             </Card>
           </Col>
         ))}

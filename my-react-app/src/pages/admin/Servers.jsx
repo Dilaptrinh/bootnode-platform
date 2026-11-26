@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Table, Typography, Grid, Spin, message, Button, Space, Modal, Form, Input, InputNumber, Select } from 'antd'
-import { CloudServerOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
+import { EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import adminService from '../../api/adminService'
 import categoryService from '../../api/categoryService'
-import { useTheme } from '../../contexts/ThemeContext'
+import { PageHeader } from '../../components/ui'
 
-const { Title, Text } = Typography
+const { Text } = Typography
 const { useBreakpoint } = Grid
 
 export default function AdminServers() {
@@ -18,7 +18,6 @@ export default function AdminServers() {
   const [editing, setEditing] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm()
-  const { isDark } = useTheme()
   const screens = useBreakpoint()
   const isMobile = !screens.md
 
@@ -46,7 +45,7 @@ export default function AdminServers() {
   const refreshServers = async () => {
     const res = await adminService.getAllServers({ page, size: 10, sort: ['id,desc'] })
     setServers(res.data.data.content || [])
-        setTotal(res.data.data?.page?.totalElements ?? res.data.data?.totalElements ?? 0)
+    setTotal(res.data.data?.page?.totalElements ?? res.data.data?.totalElements ?? 0)
   }
 
   const openCreate = () => {
@@ -105,10 +104,10 @@ export default function AdminServers() {
     { title: 'CPU', dataIndex: 'cpu', key: 'cpu', responsive: ['md'] },
     { title: 'RAM', dataIndex: 'ram', key: 'ram', responsive: ['md'] },
     { title: 'Storage', dataIndex: 'storage', key: 'storage', responsive: ['md'] },
-    { title: 'Giá', dataIndex: 'price', key: 'price', render: (p) => <Text strong>{formatPrice(p)}₫</Text> },
+    { title: 'Giá', dataIndex: 'price', key: 'price', render: (p) => <span className="vh-mono vh-text-primary" style={{ fontWeight: 600 }}>{formatPrice(p)}₫</span> },
     {
       title: 'Còn lại', dataIndex: 'remaining', key: 'remaining',
-      render: (rem, r) => <Text>{r.quantity != null ? `${rem ?? 0} / ${r.quantity}` : '--'}</Text>,
+      render: (rem, r) => <Text className="vh-mono">{r.quantity != null ? `${rem ?? 0} / ${r.quantity}` : '--'}</Text>,
     },
     { title: 'Danh mục', dataIndex: 'categoryName', key: 'categoryName', render: (v) => v || '--', responsive: ['lg'] },
     {
@@ -127,12 +126,12 @@ export default function AdminServers() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Title level={isMobile ? 4 : 3} style={{ color: isDark ? '#e8e8e8' : '#1a1a2e', margin: 0 }}>
-          <CloudServerOutlined /> Quản lý gói hosting
-        </Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>Thêm gói</Button>
-      </div>
+      <PageHeader
+        eyebrow="Quản trị"
+        title="Quản lý gói hosting"
+        subtitle="Tạo và cập nhật các gói hosting đang bán."
+        extra={<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>Thêm gói</Button>}
+      />
 
       <Table
         columns={columns}

@@ -1,20 +1,13 @@
 ﻿import { useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import { Spin, Typography, Grid } from "antd"
+import { Spin } from "antd"
 import { setAccessToken } from "../api/tokenStorage"
 import userService from "../api/userService"
 import { useAuth } from "../contexts/AuthContext"
-import { useTheme } from "../contexts/ThemeContext"
-
-const { Title } = Typography
-const { useBreakpoint } = Grid
 
 export default function OAuth2Callback() {
   const navigate = useNavigate()
   const { setUser } = useAuth()
-  const { isDark } = useTheme()
-  const screens = useBreakpoint()
-  const isMobile = !screens.md
   const processed = useRef(false)
 
   useEffect(() => {
@@ -47,18 +40,9 @@ export default function OAuth2Callback() {
   }, [navigate, setUser])
 
   return (
-    <div style={{
-      display: "flex",
-      flexDirection: "column",
-      justifyContent: "center",
-      alignItems: "center",
-      minHeight: "60vh",
-      gap: 24,
-    }}>
+    <div className="vh-center-screen">
       <Spin size="large" />
-      <Title level={isMobile ? 4 : 3} style={{ color: isDark ? "#e8e8e8" : "#1a1a2e", margin: 0 }}>
-        Đang đăng nhập...
-      </Title>
+      <h2 className="vh-h3" style={{ margin: 0 }}>Đang đăng nhập...</h2>
     </div>
   )
 }

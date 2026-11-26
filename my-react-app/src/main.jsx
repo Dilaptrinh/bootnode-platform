@@ -1,37 +1,26 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
-import { ConfigProvider, theme } from 'antd'
-import { ThemeProvider, useTheme } from './contexts/ThemeContext'
+import { ConfigProvider } from 'antd'
+import voltTheme from './theme/voltTheme'
 import { AuthProvider } from './contexts/AuthContext'
 import App from './App.jsx'
 import './index.css'
 
-function ThemedApp() {
-  const { isDark } = useTheme()
-  return (
-    <ConfigProvider
-      theme={{
-        algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
-        token: {
-          colorPrimary: '#1677ff',
-          borderRadius: 8,
-        },
-      }}
-    >
-      <AuthProvider>
-        <App />
-      </AuthProvider>
-    </ConfigProvider>
-  )
-}
+ConfigProvider.config({
+  holderRender: (children) => (
+    <ConfigProvider theme={voltTheme}>{children}</ConfigProvider>
+  ),
+})
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter>
-      <ThemeProvider>
-        <ThemedApp />
-      </ThemeProvider>
-    </BrowserRouter>
+    <ConfigProvider theme={voltTheme}>
+      <BrowserRouter>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </BrowserRouter>
+    </ConfigProvider>
   </StrictMode>,
 )

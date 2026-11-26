@@ -23,6 +23,12 @@ public class SiteController {
 
     private final SiteService siteService;
 
+    @Operation(summary = "Get static deploy eligibility for current user")
+    @GetMapping("/eligibility")
+    public ApiResponse<SiteDTO.EligibilityResponse> getEligibility() {
+        return ApiResponse.success(siteService.getEligibility(SecurityUtil.getCurrentUserId()));
+    }
+
     @Operation(summary = "Deploy static site from uploaded folder")
     @PostMapping(value = "/deploy/folder", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<SiteDTO.SiteResponse> deployFolder(

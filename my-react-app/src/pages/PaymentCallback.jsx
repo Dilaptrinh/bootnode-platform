@@ -1,46 +1,42 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Spin, Typography, Result, Button, Space, Grid } from 'antd'
+import { Result, Button, Space, Grid } from 'antd'
 import { CheckCircleFilled, CloseCircleFilled, LoadingOutlined } from '@ant-design/icons'
 import paymentService from '../api/paymentService'
 import { getAccessToken } from '../api/tokenStorage'
-import { useTheme } from '../contexts/ThemeContext'
-import { useAuth } from '../contexts/AuthContext'
 
-const { Title, Text } = Typography
 const { useBreakpoint } = Grid
+
+function getInitialState() {
+  const params = new URLSearchParams(window.location.search)
+  const resultCode = params.get('resultCode')
+  const msg = params.get('message') || ''
+
+  // PayOS trả về status=PAID / code=00
+  const payosStatus = params.get('status')
+  const payosCode = params.get('code')
+  const ok = resultCode === '0' || payosStatus === 'PAID' || payosCode === '00'
+
+  return {
+    status: ok ? 'success' : 'fail',
+    message: msg || (ok ? 'Thanh toán thành công!' : 'Thanh toán thất bại hoặc đã bị hủy'),
+  }
+}
 
 export default function PaymentCallback() {
   const navigate = useNavigate()
-  const { isDark } = useTheme()
-  const { isAuthenticated } = useAuth()
   const screens = useBreakpoint()
   const isMobile = !screens.md
   const processed = useRef(false)
 
-  const [status, setStatus] = useState('loading')
-  const [message, setMessage] = useState('')
+  const [initial] = useState(getInitialState)
+  const [status, setStatus] = useState(initial.status)
+  const [message, setMessage] = useState(initial.message)
   const [polling, setPolling] = useState(false)
 
   useEffect(() => {
     if (processed.current) return
     processed.current = true
-
-    const params = new URLSearchParams(window.location.search)
-    const resultCode = params.get('resultCode')
-    const msg = params.get('message') || ''
-
-    // PayOS trả về status=PAID / code=00
-    const payosStatus = params.get('status')
-    const payosCode = params.get('code')
-
-    if (resultCode === '0' || payosStatus === 'PAID' || payosCode === '00') {
-      setStatus('success')
-      setMessage(msg || 'Thanh toán thành công!')
-    } else {
-      setStatus('fail')
-      setMessage(msg || 'Thanh toán thất bại hoặc đã bị hủy')
-    }
 
     const verifyPayment = async () => {
       if (!getAccessToken()) return
@@ -99,35 +95,28 @@ export default function PaymentCallback() {
 
   if (status === 'loading') {
     return (
-      <div style={{
-        display: 'flex', flexDirection: 'column',
-        justifyContent: 'center', alignItems: 'center',
-        minHeight: '60vh', gap: 24,
-      }}>
-        <Spin size="large" />
-        <Title level={isMobile ? 4 : 3} style={{ color: isDark ? '#e8e8e8' : '#1a1a2e', margin: 0 }}>
-          Đang xử lý thanh toán...
-        </Title>
+      <div className="vh-center-screen">
+        <h2 className="vh-h3" style={{ margin: 0 }}>Đang xử lý thanh toán...</h2>
       </div>
     )
   }
 
   return (
-    <div style={{ maxWidth: 500, margin: '40px auto' }}>
+    <div style={{ maxWidth: 520, margin: '40px auto' }}>
       <Result
         status={status === 'success' ? 'success' : 'error'}
         icon={status === 'success'
-          ? <CheckCircleFilled style={{ color: '#52c41a', fontSize: 64 }} />
-          : <CloseCircleFilled style={{ color: '#ff4d4f', fontSize: 64 }} />
+          ? <CheckCircleFilled style={{ color: 'var(--vh-link)', fontSize: 64 }} />
+          : <CloseCircleFilled style={{ color: 'var(--vh-error)', fontSize: 64 }} />
         }
         title={status === 'success' ? 'Thanh toán thành công' : 'Thanh toán thất bại'}
         subTitle={
           <Space direction="vertical" size={4}>
-            <Text style={{ color: isDark ? '#8c8c8c' : '#6b7280' }}>{message}</Text>
+            <span className="vh-muted">{message}</span>
             {polling && (
-              <Text style={{ color: '#1677ff' }}>
+              <span className="vh-text-primary">
                 <LoadingOutlined style={{ marginRight: 6 }} />Đang chờ xác nhận thanh toán...
-              </Text>
+              </span>
             )}
           </Space>
         }

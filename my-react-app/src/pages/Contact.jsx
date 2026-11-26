@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Card, Row, Col, Form, Input, Button, Typography, message, Space, Grid } from 'antd'
+import { useEffect, useState } from 'react'
+import { Card, Row, Col, Form, Input, Button, message, Space, Grid } from 'antd'
 import {
   MailOutlined,
   UserOutlined,
@@ -8,25 +8,40 @@ import {
   ClockCircleOutlined,
   SendOutlined,
 } from '@ant-design/icons'
-import { useTheme } from '../contexts/ThemeContext'
 import contactService from '../api/contactService'
+import siteSettingService from '../api/siteSettingService'
+import { PageHeader } from '../components/ui'
 
-const { Title, Text, Paragraph } = Typography
 const { TextArea } = Input
 const { useBreakpoint } = Grid
 
-const contactInfo = [
-  { icon: <EnvironmentOutlined />, label: 'Địa chỉ', value: 'Đại học Cần Thơ' },
-  { icon: <MailOutlined />, label: 'Email', value: 'duyb2407571@student.ctu.edu.vn' },
-  { icon: <PhoneOutlined />, label: 'Hotline', value: '0335050252' },
-  { icon: <ClockCircleOutlined />, label: 'Giờ làm việc', value: 'Thứ 2 - Thứ 7, 8:00 - 18:00' },
-]
+const CONTACT_FALLBACK = {
+  address: 'Đại học Cần Thơ',
+  email: 'duyb2407571@student.ctu.edu.vn',
+  phone: '0335050252',
+  hours: 'Thứ 2 - Thứ 7, 8:00 - 18:00',
+}
 
 export default function Contact() {
   const [loading, setLoading] = useState(false)
-  const { isDark } = useTheme()
+  const [settings, setSettings] = useState({})
   const screens = useBreakpoint()
   const isMobile = !screens.md
+
+  useEffect(() => {
+    let active = true
+    siteSettingService.getPublic()
+      .then((res) => { if (active) setSettings(res.data.data || {}) })
+      .catch(() => {})
+    return () => { active = false }
+  }, [])
+
+  const contactInfo = [
+    { icon: <EnvironmentOutlined />, label: 'Địa chỉ', value: settings['contact.address'] || CONTACT_FALLBACK.address },
+    { icon: <MailOutlined />, label: 'Email', value: settings['contact.email'] || CONTACT_FALLBACK.email },
+    { icon: <PhoneOutlined />, label: 'Hotline', value: settings['contact.phone'] || CONTACT_FALLBACK.phone },
+    { icon: <ClockCircleOutlined />, label: 'Giờ làm việc', value: settings['contact.hours'] || CONTACT_FALLBACK.hours },
+  ]
 
   const onFinish = async (values) => {
     setLoading(true)
@@ -41,41 +56,26 @@ export default function Contact() {
   }
 
   return (
-    <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-      <div style={{ textAlign: 'center', padding: isMobile ? '20px 0' : '32px 0' }}>
-        <Title level={isMobile ? 3 : 2} style={{ color: isDark ? '#e8e8e8' : '#1a1a2e' }}>
-          Liên hệ
-        </Title>
-        <Paragraph style={{
-          fontSize: isMobile ? 14 : 16,
-          color: isDark ? '#8c8c8c' : '#6b7280',
-          maxWidth: 500,
-          margin: '0 auto',
-        }}>
-          Bạn có thắc mắc hoặc cần hỗ trợ? Hãy gửi tin nhắn cho chúng tôi.
-        </Paragraph>
-      </div>
+    <div style={{ maxWidth: 1040, margin: '0 auto' }}>
+      <PageHeader
+        eyebrow="Hỗ trợ"
+        title="Liên hệ"
+        subtitle="Bạn có thắc mắc hoặc cần hỗ trợ? Hãy gửi tin nhắn cho chúng tôi."
+      />
 
       <Row gutter={[isMobile ? 12 : 24, isMobile ? 12 : 24]}>
         <Col xs={24} lg={14}>
           <Card
-            style={{
-              borderRadius: 12,
-              background: isDark ? '#1f1f1f' : '#fff',
-              border: `1px solid ${isDark ? '#303030' : '#f0f0f0'}`,
-            }}
             styles={{ body: { padding: isMobile ? 20 : 32 } }}
+            style={{ borderRadius: 8 }}
           >
-            <Title level={isMobile ? 5 : 4} style={{ color: isDark ? '#e8e8e8' : '#1a1a2e', marginBottom: 20 }}>
+            <h3 className="vh-h3" style={{ fontSize: 20, fontWeight: 600, marginBottom: 20 }}>
               Gửi tin nhắn
-            </Title>
+            </h3>
             <Form layout="vertical" onFinish={onFinish} requiredMark={false}>
               <Row gutter={[16, 0]}>
                 <Col xs={24} sm={12}>
-                  <Form.Item
-                    name="name"
-                    rules={[{ required: true, message: 'Vui lòng nhập tên' }]}
-                  >
+                  <Form.Item name="name" rules={[{ required: true, message: 'Vui lòng nhập tên' }]}>
                     <Input prefix={<UserOutlined />} placeholder="Họ tên" size={isMobile ? 'middle' : 'large'} />
                   </Form.Item>
                 </Col>
@@ -91,17 +91,10 @@ export default function Contact() {
                   </Form.Item>
                 </Col>
               </Row>
-              <Form.Item
-                name="message"
-                rules={[{ required: true, message: 'Vui lòng nhập nội dung' }]}
-              >
-                <TextArea
-                  rows={5}
-                  placeholder="Nội dung tin nhắn..."
-                  size={isMobile ? 'middle' : 'large'}
-                />
+              <Form.Item name="message" rules={[{ required: true, message: 'Vui lòng nhập nội dung' }]}>
+                <TextArea rows={5} placeholder="Nội dung tin nhắn..." size={isMobile ? 'middle' : 'large'} />
               </Form.Item>
-              <Form.Item>
+              <Form.Item style={{ marginBottom: 0 }}>
                 <Button type="primary" htmlType="submit" icon={<SendOutlined />} size="large" loading={loading}>
                   Gửi tin nhắn
                 </Button>
@@ -112,39 +105,37 @@ export default function Contact() {
 
         <Col xs={24} lg={10}>
           <Space direction="vertical" size={isMobile ? 12 : 16} style={{ width: '100%' }}>
-            {contactInfo.map((info, i) => (
+            {contactInfo.map((info) => (
               <Card
-                key={i}
-                size="small"
-                style={{
-                  borderRadius: 12,
-                  background: isDark ? '#1f1f1f' : '#fff',
-                  border: `1px solid ${isDark ? '#303030' : '#f0f0f0'}`,
-                }}
-                styles={{ body: { padding: isMobile ? 14 : 20 } }}
+                key={info.label}
+                styles={{ body: { padding: isMobile ? 16 : 20 } }}
+                style={{ borderRadius: 8 }}
               >
                 <Space size={12}>
-                  <div style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 10,
-                    background: isDark ? '#1677ff1a' : '#f0f5ff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 18,
-                    color: '#1677ff',
-                    flexShrink: 0,
-                  }}>
+                  <div
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 8,
+                      background: 'var(--vh-canvas-soft)',
+                      border: '1px solid var(--vh-hairline)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 18,
+                      color: 'var(--vh-link)',
+                      flexShrink: 0,
+                    }}
+                  >
                     {info.icon}
                   </div>
                   <div>
-                    <Text style={{ fontSize: 12, color: isDark ? '#8c8c8c' : '#6b7280', display: 'block' }}>
+                    <div className="vh-eyebrow" style={{ fontSize: 11, letterSpacing: 1.4, marginBottom: 2, color: 'var(--vh-mute)' }}>
                       {info.label}
-                    </Text>
-                    <Text strong style={{ color: isDark ? '#e8e8e8' : '#1a1a2e', fontSize: isMobile ? 13 : 14 }}>
+                    </div>
+                    <div className="vh-text-ink" style={{ fontSize: isMobile ? 13 : 14, fontWeight: 600 }}>
                       {info.value}
-                    </Text>
+                    </div>
                   </div>
                 </Space>
               </Card>

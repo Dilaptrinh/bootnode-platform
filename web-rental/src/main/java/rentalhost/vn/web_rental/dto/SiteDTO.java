@@ -6,9 +6,21 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Schema(description = "Static site DTOs")
 public class SiteDTO {
+
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+    @Schema(description = "Deploy eligibility for current user")
+    public static class EligibilityResponse {
+        private boolean allowed;
+        private String email;
+        private List<String> allowedDomains;
+        private long maxSizeMb;
+        private String baseDomain;
+        private String reason;
+    }
 
     @Getter @Setter @NoArgsConstructor
     @Schema(description = "Deploy from GitHub request body")

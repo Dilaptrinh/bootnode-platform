@@ -7,15 +7,17 @@ USE web_rental;
 CREATE TABLE users (
     id          BIGINT          NOT NULL AUTO_INCREMENT,
     email       VARCHAR(100)    NOT NULL,
-    password    VARCHAR(255)    NOT NULL,
     full_name   VARCHAR(100)    NOT NULL,
     phone       VARCHAR(20)     DEFAULT NULL,
+    google_id   VARCHAR(100)    DEFAULT NULL,
+    avatar      VARCHAR(500)    DEFAULT NULL,
     role        ENUM('SUPER_ADMIN','ADMIN','USER') NOT NULL DEFAULT 'USER',
     status      ENUM('ACTIVE','BANNED')    NOT NULL DEFAULT 'ACTIVE',
     created_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT pk_users PRIMARY KEY (id),
-    CONSTRAINT uq_users_email UNIQUE (email)
+    CONSTRAINT uq_users_email UNIQUE (email),
+    CONSTRAINT uq_users_google_id UNIQUE (google_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE server_categories (
@@ -32,11 +34,12 @@ CREATE TABLE servers (
     category_id     BIGINT          DEFAULT NULL,
     name            VARCHAR(150)    NOT NULL,
     description     TEXT            DEFAULT NULL,
-    cpu             VARCHAR(50)     NOT NULL COMMENT 'vd: 2 core',
-    ram             VARCHAR(50)     NOT NULL COMMENT 'vd: 4 GB',
-    storage         VARCHAR(50)     NOT NULL COMMENT 'vd: 50 GB SSD',
-    bandwidth       VARCHAR(50)     NOT NULL COMMENT 'vd: 1 TB',
+    cpu             VARCHAR(50)     NOT NULL,
+    ram             VARCHAR(50)     NOT NULL,
+    storage         VARCHAR(50)     NOT NULL,
+    bandwidth       VARCHAR(50)     NOT NULL,
     price           DECIMAL(15,2)   NOT NULL,
+    quantity        INT             DEFAULT NULL,
     status          ENUM('AVAILABLE','RENTED','MAINTENANCE') NOT NULL DEFAULT 'AVAILABLE',
     created_at      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -76,10 +79,14 @@ CREATE TABLE payments (
     id              BIGINT          NOT NULL AUTO_INCREMENT,
     order_id        BIGINT          NOT NULL,
     amount          DECIMAL(15,2)   NOT NULL,
-    method          ENUM('BANKING','MOMO','VNPAY','CASH') NOT NULL,
+    method          ENUM('BANKING','MOMO','VNPAY','CASH','PAYOS') NOT NULL,
     status          ENUM('PENDING','SUCCESS','FAILED','REFUNDED') NOT NULL DEFAULT 'PENDING',
     transaction_id  VARCHAR(255)    DEFAULT NULL,
     paid_at         TIMESTAMP       NULL DEFAULT NULL,
+    payment_url     VARCHAR(500)    DEFAULT NULL,
+    gateway         VARCHAR(20)     DEFAULT NULL,
+    request_id      VARCHAR(100)    DEFAULT NULL,
+    order_info      VARCHAR(500)    DEFAULT NULL,
     created_at      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT pk_payments PRIMARY KEY (id),
     CONSTRAINT fk_payments_order
@@ -90,16 +97,53 @@ CREATE TABLE payments (
     INDEX idx_payments_transaction (transaction_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE refresh_tokens (
+CREATE TABLE announcements (
     id          BIGINT          NOT NULL AUTO_INCREMENT,
-    user_id     BIGINT          NOT NULL,
-    token       VARCHAR(500)    NOT NULL,
-    expires_at  TIMESTAMP       NOT NULL,
+    title       VARCHAR(255)    NOT NULL,
+    content     TEXT            NOT NULL,
     created_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT pk_refresh_tokens PRIMARY KEY (id),
-    CONSTRAINT fk_refresh_tokens_user
+    updated_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT pk_announcements PRIMARY KEY (id),
+    INDEX idx_announcements_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE sites (
+    id              BIGINT          NOT NULL AUTO_INCREMENT,
+    user_id         BIGINT          NOT NULL,
+    subdomain       VARCHAR(40)     NOT NULL,
+    source          ENUM('FOLDER','GITHUB') NOT NULL,
+    github_url      VARCHAR(500)    DEFAULT NULL,
+    status          ENUM('DEPLOYING','ACTIVE','FAILED') NOT NULL,
+    url             VARCHAR(500)    DEFAULT NULL,
+    error_message   VARCHAR(255)    DEFAULT NULL,
+    created_at      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT pk_sites PRIMARY KEY (id),
+    CONSTRAINT uq_sites_subdomain UNIQUE (subdomain),
+    CONSTRAINT fk_sites_user
         FOREIGN KEY (user_id) REFERENCES users(id)
         ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT uq_refresh_tokens_token UNIQUE (token),
-    CONSTRAINT uq_refresh_tokens_user UNIQUE (user_id)
+    INDEX idx_sites_user (user_id),
+    INDEX idx_sites_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE faqs (
+    id              BIGINT          NOT NULL AUTO_INCREMENT,
+    category        ENUM('HOSTING','DEPLOY','GENERAL') NOT NULL,
+    question        VARCHAR(500)    NOT NULL,
+    answer          TEXT            NOT NULL,
+    display_order   INT             NOT NULL DEFAULT 0,
+    active          BOOLEAN         NOT NULL DEFAULT TRUE,
+    created_at      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT pk_faqs PRIMARY KEY (id),
+    INDEX idx_faqs_category (category),
+    INDEX idx_faqs_order (display_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE site_settings (
+    setting_key     VARCHAR(100)    NOT NULL,
+    setting_value   TEXT            DEFAULT NULL,
+    updated_at      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT pk_site_settings PRIMARY KEY (setting_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

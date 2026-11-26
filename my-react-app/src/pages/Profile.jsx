@@ -1,39 +1,23 @@
 import { useEffect, useState } from 'react'
-import { Card, Row, Col, Typography, Tag, Space, Grid, Descriptions, Spin, Empty, message, Button, Modal, Form, Input } from 'antd'
+import { Card, Row, Col, Typography, Space, Grid, Descriptions, Spin, Empty, message, Button, Modal, Form, Input } from 'antd'
 import {
   UserOutlined,
   MailOutlined,
   CloudServerOutlined,
   PhoneOutlined,
   CheckCircleOutlined,
-  LockOutlined,
   EditOutlined,
 } from '@ant-design/icons'
 import userService from '../api/userService'
 import orderService from '../api/orderService'
 import { useAuth } from '../contexts/AuthContext'
-import { useTheme } from '../contexts/ThemeContext'
+import { PageHeader, StatusTag } from '../components/ui'
 
-const { Title, Text } = Typography
+const { Text } = Typography
 const { useBreakpoint } = Grid
-
-const statusColors = {
-  PENDING: 'gold',
-  ACTIVE: 'green',
-  CANCELLED: 'red',
-  EXPIRED: 'default',
-}
-
-const statusLabels = {
-  PENDING: 'Chờ thanh toán',
-  ACTIVE: 'Hoạt động',
-  CANCELLED: 'Đã hủy',
-  EXPIRED: 'Hết hạn',
-}
 
 export default function Profile() {
   const { setUser } = useAuth()
-  const { isDark } = useTheme()
   const screens = useBreakpoint()
   const isMobile = !screens.md
 
@@ -41,15 +25,9 @@ export default function Profile() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // Edit profile modal
   const [editOpen, setEditOpen] = useState(false)
   const [editLoading, setEditLoading] = useState(false)
   const [editForm] = Form.useForm()
-
-  // Change password modal
-  const [passwordOpen, setPasswordOpen] = useState(false)
-  const [passwordLoading, setPasswordLoading] = useState(false)
-  const [passwordForm] = Form.useForm()
 
   useEffect(() => {
     const fetchData = async () => {
@@ -92,22 +70,6 @@ export default function Profile() {
     }
   }
 
-  const handleChangePassword = async () => {
-    try {
-      const values = await passwordForm.validateFields()
-      setPasswordLoading(true)
-      await userService.changePassword(values)
-      message.success('Đổi mật khẩu thành công')
-      setPasswordOpen(false)
-      passwordForm.resetFields()
-    } catch (error) {
-      if (error.errorFields) return
-      message.error(error.response?.data?.message || 'Đổi mật khẩu thất bại')
-    } finally {
-      setPasswordLoading(false)
-    }
-  }
-
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: 80 }}>
@@ -117,57 +79,56 @@ export default function Profile() {
   }
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto' }}>
-      <Title level={isMobile ? 4 : 3} style={{ color: isDark ? '#e8e8e8' : '#1a1a2e', marginBottom: 24 }}>
-        Thông tin tài khoản
-      </Title>
+    <div style={{ maxWidth: 960, margin: '0 auto' }}>
+      <PageHeader
+        eyebrow="Tài khoản"
+        title="Thông tin tài khoản"
+        subtitle="Quản lý hồ sơ và lịch sử đơn hàng của bạn."
+      />
 
       <Card
-        style={{
-          borderRadius: 12,
-          marginBottom: 24,
-          background: isDark ? '#1f1f1f' : '#fff',
-          border: `1px solid ${isDark ? '#303030' : '#f0f0f0'}`,
-        }}
+        style={{ borderRadius: 8, marginBottom: 24 }}
         styles={{ body: { padding: isMobile ? 20 : 32 } }}
       >
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: isMobile ? 16 : 24,
-          marginBottom: 24,
-          flexWrap: isMobile ? 'wrap' : 'nowrap',
-          justifyContent: 'space-between',
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: isMobile ? 16 : 24,
+            marginBottom: 28,
+            flexWrap: 'wrap',
+            justifyContent: 'space-between',
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 16 : 24 }}>
-            <div style={{
-              width: isMobile ? 56 : 72,
-              height: isMobile ? 56 : 72,
-              borderRadius: '50%',
-              background: '#1677ff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}>
-              <UserOutlined style={{ fontSize: isMobile ? 24 : 32, color: '#fff' }} />
+            <div
+              style={{
+                width: isMobile ? 56 : 72,
+                height: isMobile ? 56 : 72,
+                borderRadius: '50%',
+                background: 'var(--vh-canvas-soft)',
+                border: '1px solid var(--vh-hairline)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <UserOutlined style={{ fontSize: isMobile ? 24 : 32, color: 'var(--vh-link)' }} />
             </div>
             <div>
-              <Title level={isMobile ? 4 : 3} style={{ margin: 0, color: isDark ? '#e8e8e8' : '#1a1a2e' }}>
+              <h2 className="vh-h3" style={{ margin: 0, fontSize: isMobile ? 20 : 24 }}>
                 {profile?.fullName || 'User'}
-              </Title>
+              </h2>
               <Space style={{ marginTop: 4 }}>
-                <MailOutlined style={{ color: '#8c8c8c' }} />
-                <Text style={{ color: isDark ? '#8c8c8c' : '#6b7280' }}>{profile?.email}</Text>
+                <MailOutlined className="vh-muted" />
+                <span className="vh-muted">{profile?.email}</span>
               </Space>
             </div>
           </div>
-          <Space>
+          <Space wrap>
             <Button icon={<EditOutlined />} onClick={() => { editForm.setFieldsValue(profile); setEditOpen(true) }}>
               Sửa thông tin
-            </Button>
-            <Button icon={<LockOutlined />} onClick={() => setPasswordOpen(true)}>
-              Đổi mật khẩu
             </Button>
           </Space>
         </div>
@@ -175,31 +136,24 @@ export default function Profile() {
         <Descriptions
           column={isMobile ? 1 : 2}
           size={isMobile ? 'small' : 'default'}
-          styles={{
-            label: { color: isDark ? '#8c8c8c' : '#6b7280' },
-            content: { color: isDark ? '#e8e8e8' : '#1a1a2e' },
-          }}
+          bordered
         >
           <Descriptions.Item label={<><UserOutlined /> Họ tên</>}>{profile?.fullName || '--'}</Descriptions.Item>
           <Descriptions.Item label={<><MailOutlined /> Email</>}>{profile?.email || '--'}</Descriptions.Item>
           <Descriptions.Item label={<><PhoneOutlined /> Số điện thoại</>}>{profile?.phone || '--'}</Descriptions.Item>
           <Descriptions.Item label={<><CheckCircleOutlined /> Trạng thái</>}>
-            <Tag color={profile?.status === 'ACTIVE' ? 'green' : 'red'}>
-              {profile?.status === 'ACTIVE' ? 'Hoạt động' : 'Bị khóa'}
-            </Tag>
+            <StatusTag status={profile?.status} type="user" />
           </Descriptions.Item>
           <Descriptions.Item label="Vai trò">
-            <Tag color={profile?.role === 'SUPER_ADMIN' ? 'red' : profile?.role === 'ADMIN' ? 'blue' : 'default'}>
-              {profile?.role === 'SUPER_ADMIN' ? 'Super Admin' : profile?.role === 'ADMIN' ? 'Admin' : 'Người dùng'}
-            </Tag>
+            <StatusTag status={profile?.role} type="role" />
           </Descriptions.Item>
           <Descriptions.Item label={<><CloudServerOutlined /> Đơn hàng</>}>{orders.length}</Descriptions.Item>
         </Descriptions>
       </Card>
 
-      <Title level={isMobile ? 5 : 4} style={{ color: isDark ? '#e8e8e8' : '#1a1a2e', marginBottom: 16 }}>
+      <h3 className="vh-h3" style={{ fontSize: 20, fontWeight: 600, marginBottom: 16 }}>
         Lịch sử đơn hàng
-      </Title>
+      </h3>
 
       {orders.length === 0 ? (
         <Empty description="Chưa có đơn hàng nào" />
@@ -207,58 +161,46 @@ export default function Profile() {
         orders.map((order) => (
           <Card
             key={order.id}
-            style={{
-              borderRadius: 12,
-              marginBottom: 12,
-              background: isDark ? '#1f1f1f' : '#fff',
-              border: `1px solid ${isDark ? '#303030' : '#f0f0f0'}`,
-            }}
+            style={{ borderRadius: 8, marginBottom: 12 }}
             styles={{ body: { padding: isMobile ? 16 : 20 } }}
           >
             <Row gutter={[16, 12]} align="middle">
               <Col xs={24} sm={4}>
-                <Text style={{ color: isDark ? '#8c8c8c' : '#6b7280', fontSize: 12 }}>MÃ ĐƠN</Text>
-                <div>
-                  <Text copyable strong style={{ color: '#1677ff', fontSize: 13 }}>
-                    #{order.id}
-                  </Text>
-                </div>
+                <div className="vh-label">Mã đơn</div>
+                <Text copyable className="vh-mono vh-text-primary" style={{ fontSize: 13 }}>
+                  #{order.id}
+                </Text>
               </Col>
               <Col xs={12} sm={5}>
-                <Text style={{ color: isDark ? '#8c8c8c' : '#6b7280', fontSize: 12 }}>GÓI</Text>
-                <div>
-                  <Text strong style={{ color: isDark ? '#e8e8e8' : '#1a1a2e', fontSize: isMobile ? 13 : 14 }}>
-                    <CloudServerOutlined style={{ marginRight: 6, color: '#1677ff' }} />
-                    {order.serverName}
-                  </Text>
-                </div>
+                <div className="vh-label">Gói</div>
+                <span className="vh-text-ink" style={{ fontWeight: 600, fontSize: isMobile ? 13 : 14 }}>
+                  <CloudServerOutlined style={{ marginRight: 6, color: 'var(--vh-link)' }} />
+                  {order.serverName}
+                </span>
               </Col>
               <Col xs={12} sm={4}>
-                <Text style={{ color: isDark ? '#8c8c8c' : '#6b7280', fontSize: 12 }}>BẮT ĐẦU</Text>
-                <div><Text style={{ color: isDark ? '#e8e8e8' : '#1a1a2e', fontSize: isMobile ? 13 : 14 }}>{order.startDate}</Text></div>
+                <div className="vh-label">Bắt đầu</div>
+                <span className="vh-text-ink" style={{ fontSize: isMobile ? 13 : 14 }}>{order.startDate}</span>
               </Col>
               <Col xs={12} sm={4}>
-                <Text style={{ color: isDark ? '#8c8c8c' : '#6b7280', fontSize: 12 }}>KẾT THÚC</Text>
-                <div><Text style={{ color: isDark ? '#e8e8e8' : '#1a1a2e', fontSize: isMobile ? 13 : 14 }}>{order.endDate}</Text></div>
+                <div className="vh-label">Kết thúc</div>
+                <span className="vh-text-ink" style={{ fontSize: isMobile ? 13 : 14 }}>{order.endDate}</span>
               </Col>
               <Col xs={12} sm={4}>
-                <Text style={{ color: isDark ? '#8c8c8c' : '#6b7280', fontSize: 12 }}>GIÁ</Text>
-                <div><Text strong style={{ color: '#1677ff', fontSize: isMobile ? 13 : 14 }}>{formatPrice(order.totalPrice)}₫</Text></div>
+                <div className="vh-label">Giá</div>
+                <span className="vh-mono vh-text-primary" style={{ fontWeight: 600, fontSize: isMobile ? 13 : 14 }}>
+                  {formatPrice(order.totalPrice)}₫
+                </span>
               </Col>
               <Col xs={12} sm={3}>
-                <Text style={{ color: isDark ? '#8c8c8c' : '#6b7280', fontSize: 12 }}>TRẠNG THÁI</Text>
-                <div>
-                  <Tag color={statusColors[order.status] || 'default'} style={{ margin: 0 }}>
-                    {statusLabels[order.status] || order.status}
-                  </Tag>
-                </div>
+                <div className="vh-label">Trạng thái</div>
+                <StatusTag status={order.status} type="order" />
               </Col>
             </Row>
           </Card>
         ))
       )}
 
-      {/* Edit Profile Modal */}
       <Modal
         title="Sửa thông tin"
         open={editOpen}
@@ -278,37 +220,6 @@ export default function Profile() {
           </Form.Item>
           <Form.Item name="phone" label="Số điện thoại">
             <Input placeholder="Số điện thoại" />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Change Password Modal */}
-      <Modal
-        title="Đổi mật khẩu"
-        open={passwordOpen}
-        onCancel={() => { setPasswordOpen(false); passwordForm.resetFields() }}
-        onOk={handleChangePassword}
-        confirmLoading={passwordLoading}
-        okText="Đổi mật khẩu"
-        cancelText="Hủy"
-      >
-        <Form form={passwordForm} layout="vertical" requiredMark={false}>
-          <Form.Item
-            name="oldPassword"
-            label="Mật khẩu hiện tại"
-            rules={[{ required: true, message: 'Vui lòng nhập mật khẩu hiện tại' }]}
-          >
-            <Input.Password placeholder="Mật khẩu hiện tại" />
-          </Form.Item>
-          <Form.Item
-            name="newPassword"
-            label="Mật khẩu mới"
-            rules={[
-              { required: true, message: 'Vui lòng nhập mật khẩu mới' },
-              { min: 6, message: 'Mật khẩu ít nhất 6 ký tự' },
-            ]}
-          >
-            <Input.Password placeholder="Mật khẩu mới" />
           </Form.Item>
         </Form>
       </Modal>
