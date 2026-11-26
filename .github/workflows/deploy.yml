@@ -53,6 +53,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - name: Preflight check secrets
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          missing=0
+          if [ -z "$VPS_HOST" ]; then echo "::error::Missing secret VPS_HOST"; missing=1; fi
+          if [ -z "$VPS_USER" ]; then echo "::error::Missing secret VPS_USER"; missing=1; fi
+          if [ -z "$VPS_SSH_KEY" ]; then echo "::error::Missing secret VPS_SSH_KEY"; missing=1; fi
+          exit $missing
+
       - name: SSH deploy (git pull + docker compose build)
         uses: appleboy/ssh-action@v1.2.0
         with:
