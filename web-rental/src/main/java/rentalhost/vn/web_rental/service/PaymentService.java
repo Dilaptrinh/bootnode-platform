@@ -255,7 +255,15 @@ public class PaymentService {
 
         var server = order.getServer();
         if (server != null) {
-            server.setStatus(ServerStatus.RENTED);
+            long used = orderRepository.countByServerAndStatusIn(
+                    server, List.of(OrderStatus.PENDING, OrderStatus.ACTIVE));
+            // Only mark the plan RENTED when every slot is taken; a plan with quantity > 1
+            // must stay visible while it still has free slots.
+            if (server.getQuantity() != null && used >= server.getQuantity()) {
+                server.setStatus(ServerStatus.RENTED);
+            } else {
+                server.setStatus(ServerStatus.AVAILABLE);
+            }
             serverRepository.save(server);
         }
         catalogCacheService.purgeEdgeCacheAfterCommit();

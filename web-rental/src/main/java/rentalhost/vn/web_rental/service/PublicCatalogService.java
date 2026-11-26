@@ -31,10 +31,15 @@ public class PublicCatalogService {
 
     @Cacheable(value = "servers", sync = true)
     public List<ServerDTO.ServerResponse> availableServers() {
-        List<Server> servers = serverRepository.findByStatus(ServerStatus.AVAILABLE);
+        // A plan marked RENTED may still have free slots (quantity > active orders), so include
+        // both AVAILABLE and RENTED; only MAINTENANCE is hidden. Then drop plans with no slots left.
+        List<Server> servers = serverRepository.findByStatusIn(
+                List.of(ServerStatus.AVAILABLE, ServerStatus.RENTED));
         Map<Long, Long> activeByServer = activeCountByServer();
         return servers.stream()
                 .map(server -> toResponse(server, activeByServer))
+                .filter(resp -> resp.getQuantity() == null
+                        || (resp.getRemaining() != null && resp.getRemaining() > 0))
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
@@ -51,7 +56,10 @@ public class PublicCatalogService {
         ServerDTO.ServerResponse resp = serverMapper.toResponse(server);
         if (server.getQuantity() != null) {
             long active = activeByServer.getOrDefault(server.getId(), 0L);
-            resp.setRemaining(Math.max(0, server.getQuantity().longValue() - active));
+            long remaining = Math.max(0, server.getQuantity().longValue() - active);
+            resp.setRemaining(remaining);
+            // Keep public status consistent with actual availability.
+            resp.setStatus(remaining > 0 ? ServerStatus.AVAILABLE.name() : ServerStatus.RENTED.name());
         }
         return resp;
     }
