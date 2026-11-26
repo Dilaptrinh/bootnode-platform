@@ -61,6 +61,9 @@ public class SiteSettingService {
     public Map<String, String> getPublicSettings() {
         Map<String, String> result = new LinkedHashMap<>();
         siteSettingRepository.findAllById(PUBLIC_KEYS).stream()
+                // Bỏ qua giá trị rỗng: admin xóa thông tin trong Settings thì API
+                // công khai không trả về nữa (tránh lộ email/số điện thoại).
+                .filter(s -> s.getSettingValue() != null && !s.getSettingValue().isBlank())
                 .sorted(Comparator.comparing(SiteSetting::getSettingKey))
                 .forEach(s -> result.put(s.getSettingKey(), s.getSettingValue()));
         return result;

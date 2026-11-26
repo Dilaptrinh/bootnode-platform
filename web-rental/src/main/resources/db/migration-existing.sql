@@ -173,9 +173,9 @@ SELECT * FROM (
 ) AS seed
 WHERE @faq_count = 0;
 
+-- Không seed email/số điện thoại cá nhân: admin tự cấu hình trong trang quản trị
+-- nếu muốn hiển thị, tránh lộ thông tin trong repo và API công khai.
 INSERT IGNORE INTO site_settings (setting_key, setting_value) VALUES
-    ('contact.email', 'duyb2407571@student.ctu.edu.vn'),
-    ('contact.phone', '0335050252'),
     ('contact.address', 'Đại học Cần Thơ'),
     ('contact.hours', 'Thứ 2 - Thứ 7, 8:00 - 18:00'),
     ('site.brand_name', 'HireHost'),

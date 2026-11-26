@@ -31,8 +31,6 @@ const DEPLOY_FIELDS = [
   },
 ]
 
-const ALL_FIELDS = [...CONTENT_FIELDS, ...DEPLOY_FIELDS]
-
 function fieldRules(field) {
   return [
     ...(field.required ? [{ required: true, message: 'Trường này không được để trống' }] : []),
@@ -67,20 +65,23 @@ export default function AdminSiteSettings() {
     const values = await form.validateFields()
     setSaving(true)
     try {
-      const updates = ALL_FIELDS
-        .map((f) => ({
-          key: f.key,
-          value: values[f.key] === undefined || values[f.key] === null
-            ? ''
-            : String(values[f.key]).trim(),
-        }))
+      const toString = (v) => (v === undefined || v === null ? '' : String(v).trim())
+      // Trường nội dung luôn được gửi (kể cả rỗng) để admin có thể XÓA hẳn
+      // email/điện thoại khỏi website. Trường deploy bỏ qua nếu để trống vì
+      // backend không cho phép giá trị rỗng cho các cấu hình này.
+      const contentUpdates = CONTENT_FIELDS.map((f) => ({
+        key: f.key,
+        value: toString(values[f.key]),
+      }))
+      const deployUpdates = DEPLOY_FIELDS
+        .map((f) => ({ key: f.key, value: toString(values[f.key]) }))
         .filter((item) => item.value !== '')
-        .map((item) => siteSettingService.update(item.key, item.value))
+      const updates = [...contentUpdates, ...deployUpdates]
       if (updates.length === 0) {
         message.info('Không có thay đổi để lưu')
         return
       }
-      await Promise.all(updates)
+      await Promise.all(updates.map((item) => siteSettingService.update(item.key, item.value)))
       await reload()
       message.success('Đã lưu cài đặt')
     } catch (err) {

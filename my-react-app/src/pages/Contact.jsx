@@ -21,12 +21,13 @@ export default function Contact() {
   const screens = useBreakpoint()
   const isMobile = !screens.md
 
+  // Chỉ hiển thị mục nào có giá trị admin đã cấu hình; xóa trong Settings thì ẩn hẳn.
   const contactInfo = [
     { icon: <EnvironmentOutlined />, label: 'Địa chỉ', value: settings['contact.address'] },
     { icon: <MailOutlined />, label: 'Email', value: settings['contact.email'] },
     { icon: <PhoneOutlined />, label: 'Hotline', value: settings['contact.phone'] },
     { icon: <ClockCircleOutlined />, label: 'Giờ làm việc', value: settings['contact.hours'] },
-  ]
+  ].filter((info) => info.value != null && String(info.value).trim() !== '')
 
   const onFinish = async (values) => {
     setLoading(true)
@@ -49,7 +50,7 @@ export default function Contact() {
       />
 
       <Row gutter={[isMobile ? 12 : 24, isMobile ? 12 : 24]}>
-        <Col xs={24} lg={14}>
+        <Col xs={24} lg={contactInfo.length > 0 ? 14 : 24}>
           <Card
             styles={{ body: { padding: isMobile ? 20 : 32 } }}
             style={{ borderRadius: 8 }}
@@ -88,6 +89,7 @@ export default function Contact() {
           </Card>
         </Col>
 
+        {contactInfo.length > 0 && (
         <Col xs={24} lg={10}>
           <Space direction="vertical" size={isMobile ? 12 : 16} style={{ width: '100%' }}>
             {contactInfo.map((info) => (
@@ -127,6 +129,7 @@ export default function Contact() {
             ))}
           </Space>
         </Col>
+        )}
       </Row>
     </div>
   )

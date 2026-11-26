@@ -133,12 +133,13 @@ export default function AppLayout() {
   )
 
   const brandName = settings['site.brand_name'] || 'HireHost'
-  const contact = {
-    email: settings['contact.email'],
-    phone: settings['contact.phone'],
-    address: settings['contact.address'],
-    hours: settings['contact.hours'],
-  }
+  // Chỉ hiển thị thông tin liên hệ mà admin đã cấu hình (rỗng -> ẩn hẳn).
+  const contactInfo = [
+    { label: 'Email', value: settings['contact.email'] },
+    { label: 'Hotline', value: settings['contact.phone'] },
+    { label: 'Địa chỉ', value: settings['contact.address'] },
+    { label: 'Giờ làm việc', value: settings['contact.hours'] },
+  ].filter((item) => item.value != null && String(item.value).trim() !== '')
 
   return (
     <div className="vh-app">
@@ -297,13 +298,18 @@ export default function AppLayout() {
                 </Link>
               ))}
             </div>
-            <div>
-              <div className="vh-footer__col-title">Liên hệ</div>
-              <span className="vh-footer__link">Email: {contact.email}</span>
-              <span className="vh-footer__link">Hotline: {contact.phone}</span>
-              <span className="vh-footer__link">{contact.address}</span>
-              <span className="vh-footer__link">{contact.hours}</span>
-            </div>
+            {contactInfo.length > 0 && (
+              <div>
+                <div className="vh-footer__col-title">Liên hệ</div>
+                {contactInfo.map((item) => (
+                  <span key={item.label} className="vh-footer__link">
+                    {item.label === 'Email' || item.label === 'Hotline'
+                      ? `${item.label}: ${item.value}`
+                      : item.value}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
           <div className="vh-footer__bottom">
             <span>{brandName} ©2026</span>
