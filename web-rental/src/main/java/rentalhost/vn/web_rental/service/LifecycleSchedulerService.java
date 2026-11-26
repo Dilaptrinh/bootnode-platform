@@ -3,6 +3,7 @@ package rentalhost.vn.web_rental.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +42,7 @@ public class LifecycleSchedulerService {
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
     private final ServerRepository serverRepository;
+    private final CatalogCacheService catalogCacheService;
 
     /**
      * Tự hủy các đơn hàng &amp; giao dịch PENDING quá hạn (bỏ dở, không thanh toán).
@@ -49,6 +51,7 @@ public class LifecycleSchedulerService {
      */
     @Scheduled(cron = "0 */5 * * * *")
     @Transactional
+    @CacheEvict(cacheNames = "servers", allEntries = true)
     public void cancelExpiredPendingOrders() {
         LocalDateTime cutoff = LocalDateTime.now().minusMinutes(PENDING_TIMEOUT_MINUTES);
         LocalDateTime manualCutoff = LocalDateTime.now().minusMinutes(manualPendingTimeoutMinutes);
@@ -96,6 +99,7 @@ public class LifecycleSchedulerService {
                 paymentRepository.save(payment);
             }
         }
+        catalogCacheService.purgeEdgeCacheAfterCommit();
     }
 
     /**
@@ -106,6 +110,7 @@ public class LifecycleSchedulerService {
      */
     @Scheduled(cron = "0 15 0 * * *")
     @Transactional
+    @CacheEvict(cacheNames = "servers", allEntries = true)
     public void expireActiveOrders() {
         LocalDate today = LocalDate.now();
         log.info("[scheduler] expireActiveOrders - today={}", today);
@@ -131,5 +136,6 @@ public class LifecycleSchedulerService {
                 log.info("[scheduler] released rented server id={} back to AVAILABLE", server.getId());
             }
         }
+        catalogCacheService.purgeEdgeCacheAfterCommit();
     }
 }

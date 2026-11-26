@@ -34,7 +34,8 @@ public class ServerService {
     private ServerDTO.ServerResponse toResponse(Server server) {
         ServerDTO.ServerResponse resp = serverMapper.toResponse(server);
         if (server.getQuantity() != null) {
-            long active = orderRepository.countByServerAndStatus(server, OrderStatus.ACTIVE);
+            long active = orderRepository.countByServerAndStatusIn(
+                    server, List.of(OrderStatus.PENDING, OrderStatus.ACTIVE));
             resp.setRemaining(Math.max(0, server.getQuantity().longValue() - active));
         }
         return resp;

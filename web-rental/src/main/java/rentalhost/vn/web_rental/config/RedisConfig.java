@@ -47,7 +47,8 @@ public class RedisConfig {
         Map<String, RedisCacheConfiguration> cacheConfigurations = new HashMap<>();
         // Danh sách hosting plan: remaining thay đổi theo đơn ACTIVE, nhưng order đổi không evict cache
         // (chỉ admin sửa server mới evict). TTL 5 phút để giảm số lần miss/N+1.
-        cacheConfigurations.put("servers", base.entryTtl(Duration.ofMinutes(5)));
+        // Cache ngắn + evict khi đơn đổi trạng thái (mua/huỷ/thanh toán) để "còn chỗ" cập nhật ngay.
+        cacheConfigurations.put("servers", base.entryTtl(Duration.ofMinutes(1)));
         cacheConfigurations.put("categories", base.entryTtl(Duration.ofMinutes(30)));
         cacheConfigurations.put("announcements", base.entryTtl(Duration.ofMinutes(10)));
         cacheConfigurations.put("mySites", base.entryTtl(Duration.ofSeconds(60)));

@@ -53,4 +53,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("SELECT o.server.id, COUNT(o) FROM Order o WHERE o.status = :status GROUP BY o.server.id")
     List<Object[]> countByServerGroupByStatus(OrderStatus status);
+
+    @Query("SELECT o.server.id, COUNT(o) FROM Order o WHERE o.status IN :statuses GROUP BY o.server.id")
+    List<Object[]> countByServerGroupByStatusIn(@Param("statuses") java.util.Collection<OrderStatus> statuses);
 }

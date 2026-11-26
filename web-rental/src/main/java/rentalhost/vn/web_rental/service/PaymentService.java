@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import rentalhost.vn.web_rental.config.PaymentConfig;
@@ -43,6 +44,7 @@ public class PaymentService {
     private final MoMoPaymentGateway moMoPaymentGateway;
     private final PayOSPaymentGateway payOSPaymentGateway;
     private final PaymentConfig paymentConfig;
+    private final CatalogCacheService catalogCacheService;
 
     @Transactional
     public PaymentDTO.PaymentResponse create(PaymentDTO.PaymentRequest request, Long userId, String ipAddr) {
@@ -189,6 +191,7 @@ public class PaymentService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "servers", allEntries = true)
     public String handlePayOSWebhook(String rawBody, String signature) {
         log.info("PayOS webhook received");
         if (!payOSPaymentGateway.verifyWebhook(rawBody)) {
@@ -255,9 +258,11 @@ public class PaymentService {
             server.setStatus(ServerStatus.RENTED);
             serverRepository.save(server);
         }
+        catalogCacheService.purgeEdgeCacheAfterCommit();
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "servers", allEntries = true)
     public PaymentDTO.PaymentResponse confirm(Long paymentId) {
         Payment payment = paymentRepository.findByIdForUpdate(paymentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment", paymentId));
@@ -295,6 +300,7 @@ public class PaymentService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "servers", allEntries = true)
     public PaymentDTO.PaymentResponse reject(Long paymentId) {
         Payment payment = paymentRepository.findByIdForUpdate(paymentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment", paymentId));
@@ -312,6 +318,7 @@ public class PaymentService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "servers", allEntries = true)
     public String handleMoMoIpn(Map<String, String> params) {
         log.info("MoMo IPN received: {}", params);
 

@@ -39,7 +39,9 @@ public class PublicCatalogService {
     }
 
     private Map<Long, Long> activeCountByServer() {
-        return orderRepository.countByServerGroupByStatus(OrderStatus.ACTIVE).stream()
+        // PENDING orders also reserve a slot (see OrderService.create), so count them too.
+        return orderRepository.countByServerGroupByStatusIn(
+                        List.of(OrderStatus.PENDING, OrderStatus.ACTIVE)).stream()
                 .collect(Collectors.toMap(
                         row -> (Long) row[0],
                         row -> ((Number) row[1]).longValue()));
