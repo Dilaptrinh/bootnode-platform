@@ -22,6 +22,9 @@ public interface ServerRepository extends JpaRepository<Server, Long> {
     @Query("SELECT s FROM Server s LEFT JOIN FETCH s.category WHERE s.status = :status")
     List<Server> findByStatus(ServerStatus status);
 
+    @Query("SELECT s FROM Server s LEFT JOIN FETCH s.category WHERE s.status IN :statuses")
+    List<Server> findByStatusIn(@Param("statuses") java.util.Collection<ServerStatus> statuses);
+
     @Query("SELECT s FROM Server s LEFT JOIN FETCH s.category WHERE s.status = :status")
     Page<Server> findByStatus(ServerStatus status, Pageable pageable);
 

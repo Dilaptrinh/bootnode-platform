@@ -129,11 +129,14 @@ public class LifecycleSchedulerService {
         // Trả server bị kẹt RENTED (chưa có đơn ACTIVE nào) về AVAILABLE để bán lại
         List<Server> rented = serverRepository.findByStatus(ServerStatus.RENTED);
         for (Server server : rented) {
-            long active = orderRepository.countByServerAndStatus(server, OrderStatus.ACTIVE);
-            if (active == 0) {
+            long used = orderRepository.countByServerAndStatusIn(
+                    server, List.of(OrderStatus.PENDING, OrderStatus.ACTIVE));
+            boolean hasFreeSlot = server.getQuantity() == null || used < server.getQuantity();
+            if (hasFreeSlot) {
                 server.setStatus(ServerStatus.AVAILABLE);
                 serverRepository.save(server);
-                log.info("[scheduler] released rented server id={} back to AVAILABLE", server.getId());
+                log.info("[scheduler] released rented server id={} back to AVAILABLE (used={}, quantity={})",
+                        server.getId(), used, server.getQuantity());
             }
         }
         catalogCacheService.purgeEdgeCacheAfterCommit();
