@@ -23,6 +23,7 @@ public class SiteStorageService {
 
     private final SiteStorageConfig config;
     private final SiteRepository siteRepository;
+    private final SiteSettingService siteSettingService;
 
     private static final String SUBDOMAIN_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
     private static final int SUBDOMAIN_LENGTH = 6;
@@ -71,9 +72,10 @@ public class SiteStorageService {
         if (files == null || files.isEmpty()) {
             throw new BadRequestException("No files uploaded");
         }
+        long maxBytes = siteSettingService.getMaxDeploySizeBytes();
         long total = files.stream().mapToLong(MultipartFile::getSize).sum();
-        if (total > config.getMaxSizeBytes()) {
-            throw new BadRequestException("Total upload size exceeds limit of " + config.getMaxSizeBytes() + " bytes");
+        if (total > maxBytes) {
+            throw new BadRequestException("Total upload size exceeds limit of " + maxBytes + " bytes");
         }
         Path staging = null;
         try {
@@ -93,10 +95,11 @@ public class SiteStorageService {
         Path staging = null;
         try {
             staging = createStaging("site-gh-" + subdomain);
-            long copied = copyTree(cloneDir, staging, 0L);
-            if (copied > config.getMaxSizeBytes()) {
+            long maxBytes = siteSettingService.getMaxDeploySizeBytes();
+            long copied = copyTree(cloneDir, staging, 0L, maxBytes);
+            if (copied > maxBytes) {
                 throw new BadRequestException("GitHub repository size exceeds limit of "
-                        + config.getMaxSizeBytes() + " bytes");
+                        + maxBytes + " bytes");
             }
             publish(subdomain, staging);
         } catch (IOException e) {
@@ -149,7 +152,7 @@ public class SiteStorageService {
         }
     }
 
-    private long copyTree(Path src, Path staging, long sizeSoFar) throws IOException {
+    private long copyTree(Path src, Path staging, long sizeSoFar, long maxBytes) throws IOException {
         long total = sizeSoFar;
         try (Stream<Path> stream = Files.walk(src)) {
             List<Path> paths = stream.filter(p -> !Files.isDirectory(p)).toList();
@@ -164,7 +167,7 @@ public class SiteStorageService {
                     continue;
                 }
                 total += Files.size(path);
-                if (total > config.getMaxSizeBytes()) {
+                if (total > maxBytes) {
                     throw new IOException("GitHub repository exceeds size limit");
                 }
                 Path target = staging.resolve(sanitized).normalize();

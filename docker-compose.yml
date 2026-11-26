@@ -12,7 +12,7 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - hire-host-new_mysql_data:/var/lib/mysql
     networks:
       - web_rental_net
 
@@ -42,6 +42,8 @@ services:
       APP_BASE_URL: ${APP_BASE_URL:-https://bootnode.cloud}
       APP_FRONTEND_URL: ${APP_FRONTEND_URL:-https://bootnode.cloud}
       APP_BASE_DOMAIN: ${APP_BASE_DOMAIN:-bootnode.cloud}
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-https://bootnode.cloud,http://localhost:5173}
+      SPRINGDOC_ENABLED: ${SPRINGDOC_ENABLED:-false}
 
       JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-here-must-be-at-least-256-bits-long}
       ADMIN_EMAILS: ${ADMIN_EMAILS:-duyb2407571@student.ctu.edu.vn}
@@ -71,7 +73,7 @@ services:
       CLOUDFLARE_ZONE_ID: ${CLOUDFLARE_ZONE_ID}
       CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN}
     volumes:
-      - hosted_sites:/srv/hosted-sites
+      - hire-host-new_hosted_sites:/srv/hosted-sites
       - backend_logs:/srv/logs
     depends_on:
       - mysql-db
@@ -88,15 +90,17 @@ services:
     ports:
       - "80:80"
     volumes:
-      - hosted_sites:/srv/hosted-sites:ro
+      - hire-host-new_hosted_sites:/srv/hosted-sites:ro
     depends_on:
       - backend
     networks:
       - web_rental_net
 
 volumes:
-  mysql_data:
-  hosted_sites:
+  hire-host-new_mysql_data:
+    external: true
+  hire-host-new_hosted_sites:
+    external: true
   redis_data:
   backend_logs:
 

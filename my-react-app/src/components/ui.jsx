@@ -1,7 +1,7 @@
 import { ThunderboltFilled } from '@ant-design/icons'
 import { resolveStatus } from '../theme/status'
 
-export function BrandMark({ size = 'md', onClick }) {
+export function BrandMark({ size = 'md', onClick, name = 'HireHost' }) {
   return (
     <span
       className={`vh-brand vh-brand--${size}${onClick ? ' vh-brand--link' : ''}`}
@@ -12,7 +12,7 @@ export function BrandMark({ size = 'md', onClick }) {
       <span className="vh-brand__mark">
         <ThunderboltFilled />
       </span>
-      <span className="vh-brand__text">HireHost</span>
+      <span className="vh-brand__text">{name || 'HireHost'}</span>
     </span>
   )
 }

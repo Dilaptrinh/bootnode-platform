@@ -5,6 +5,7 @@ import {
   TrophyOutlined,
   HeartOutlined,
 } from '@ant-design/icons'
+import { useSiteSettings } from '../contexts/siteSettingsContext'
 import { PageHeader } from '../components/ui'
 
 const { useBreakpoint } = Grid
@@ -18,14 +19,16 @@ const values = [
 
 export default function About() {
   const screens = useBreakpoint()
+  const { settings } = useSiteSettings()
+  const brandName = settings['site.brand_name'] || 'HireHost'
   const isMobile = !screens.md
 
   return (
     <div style={{ maxWidth: 1000, margin: '0 auto' }}>
       <PageHeader
         eyebrow="Về chúng tôi"
-        title="Về HireHost"
-        subtitle="HireHost cung cấp hai dịch vụ tách biệt: triển khai web tĩnh miễn phí cho sinh viên CTU và thuê hosting trả phí cho dự án lớn hơn."
+        title={`Về ${brandName}`}
+        subtitle={`${brandName} cung cấp hai dịch vụ tách biệt: triển khai web tĩnh miễn phí cho sinh viên CTU và thuê hosting trả phí cho dự án lớn hơn.`}
       />
 
       <Row gutter={[isMobile ? 12 : 20, isMobile ? 12 : 20]}>

@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom'
 import serverService from '../api/serverService'
 import announcementService from '../api/announcementService'
 import faqService from '../api/faqService'
+import { useSiteSettings } from '../contexts/siteSettingsContext'
 import { SectionHeading, TerminalMockup } from '../components/ui'
 
 function formatPrice(price) {
@@ -21,6 +22,9 @@ function formatPrice(price) {
 
 export default function Home() {
   const navigate = useNavigate()
+  const { settings } = useSiteSettings()
+  const heroTitle = settings['home.hero_title']
+  const heroSubtitle = settings['home.hero_subtitle']
   const [servers, setServers] = useState([])
   const [announcements, setAnnouncements] = useState([])
   const [faqs, setFaqs] = useState([])
@@ -66,11 +70,8 @@ export default function Home() {
       <section className="vh-hero">
         <div className="vh-hero__copy">
           <div className="vh-eyebrow">Dành cho sinh viên Đại học Cần Thơ</div>
-          <h1 className="vh-h1">Triển khai web tĩnh miễn phí</h1>
-          <p className="vh-lead">
-            Miễn phí với email @student.ctu.edu.vn. Cần tài nguyên lớn hơn? Thuê hosting
-            riêng với cấu hình và giá minh bạch.
-          </p>
+          <h1 className="vh-h1">{heroTitle}</h1>
+          <p className="vh-lead" style={{ whiteSpace: 'pre-line' }}>{heroSubtitle}</p>
           <div className="vh-hero__actions">
             <Button type="primary" size="large" onClick={() => navigate('/deployment')}>
               Triển khai miễn phí <ArrowRightOutlined />

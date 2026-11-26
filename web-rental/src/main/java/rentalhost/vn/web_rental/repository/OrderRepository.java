@@ -42,6 +42,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     long countByServerAndStatus(Server server, OrderStatus status);
 
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.server = :server AND o.status IN :statuses")
+    long countByServerAndStatusIn(@Param("server") Server server, @Param("statuses") java.util.Collection<OrderStatus> statuses);
+
     @Query("SELECT o FROM Order o JOIN FETCH o.server WHERE o.status = :status AND o.createdAt < :before")
     List<Order> findByStatusAndCreatedAtBefore(OrderStatus status, LocalDateTime before);
 

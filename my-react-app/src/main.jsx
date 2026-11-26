@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { ConfigProvider } from 'antd'
 import voltTheme from './theme/voltTheme'
 import { AuthProvider } from './contexts/AuthContext'
+import { SiteSettingsProvider } from './contexts/SiteSettingsProvider'
 import App from './App.jsx'
 import './index.css'
 
@@ -18,7 +19,9 @@ createRoot(document.getElementById('root')).render(
     <ConfigProvider theme={voltTheme}>
       <BrowserRouter>
         <AuthProvider>
-          <App />
+          <SiteSettingsProvider>
+            <App />
+          </SiteSettingsProvider>
         </AuthProvider>
       </BrowserRouter>
     </ConfigProvider>

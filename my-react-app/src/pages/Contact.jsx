@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Card, Row, Col, Form, Input, Button, message, Space, Grid } from 'antd'
 import {
   MailOutlined,
@@ -9,38 +9,23 @@ import {
   SendOutlined,
 } from '@ant-design/icons'
 import contactService from '../api/contactService'
-import siteSettingService from '../api/siteSettingService'
+import { useSiteSettings } from '../contexts/siteSettingsContext'
 import { PageHeader } from '../components/ui'
 
 const { TextArea } = Input
 const { useBreakpoint } = Grid
 
-const CONTACT_FALLBACK = {
-  address: 'Đại học Cần Thơ',
-  email: 'duyb2407571@student.ctu.edu.vn',
-  phone: '0335050252',
-  hours: 'Thứ 2 - Thứ 7, 8:00 - 18:00',
-}
-
 export default function Contact() {
   const [loading, setLoading] = useState(false)
-  const [settings, setSettings] = useState({})
+  const { settings } = useSiteSettings()
   const screens = useBreakpoint()
   const isMobile = !screens.md
 
-  useEffect(() => {
-    let active = true
-    siteSettingService.getPublic()
-      .then((res) => { if (active) setSettings(res.data.data || {}) })
-      .catch(() => {})
-    return () => { active = false }
-  }, [])
-
   const contactInfo = [
-    { icon: <EnvironmentOutlined />, label: 'Địa chỉ', value: settings['contact.address'] || CONTACT_FALLBACK.address },
-    { icon: <MailOutlined />, label: 'Email', value: settings['contact.email'] || CONTACT_FALLBACK.email },
-    { icon: <PhoneOutlined />, label: 'Hotline', value: settings['contact.phone'] || CONTACT_FALLBACK.phone },
-    { icon: <ClockCircleOutlined />, label: 'Giờ làm việc', value: settings['contact.hours'] || CONTACT_FALLBACK.hours },
+    { icon: <EnvironmentOutlined />, label: 'Địa chỉ', value: settings['contact.address'] },
+    { icon: <MailOutlined />, label: 'Email', value: settings['contact.email'] },
+    { icon: <PhoneOutlined />, label: 'Hotline', value: settings['contact.phone'] },
+    { icon: <ClockCircleOutlined />, label: 'Giờ làm việc', value: settings['contact.hours'] },
   ]
 
   const onFinish = async (values) => {

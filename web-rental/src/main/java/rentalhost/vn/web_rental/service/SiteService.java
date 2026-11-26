@@ -36,6 +36,7 @@ public class SiteService {
     private final GitHubCloneService gitHubCloneService;
     private final DeployAccessConfig deployAccessConfig;
     private final SiteStorageConfig siteStorageConfig;
+    private final SiteSettingService siteSettingService;
 
     @Transactional
     @CacheEvict(cacheNames = "mySites", allEntries = true)
@@ -167,8 +168,8 @@ public class SiteService {
         return SiteDTO.EligibilityResponse.builder()
                 .allowed(reason == null)
                 .email(user.getEmail())
-                .allowedDomains(deployAccessConfig.getAllowedEmailDomains())
-                .maxSizeMb(siteStorageConfig.getMaxSizeBytes() / (1024 * 1024))
+                .allowedDomains(siteSettingService.getDeployAllowedDomains())
+                .maxSizeMb(siteSettingService.getMaxDeploySizeBytes() / (1024 * 1024))
                 .baseDomain(siteStorageConfig.getBaseDomain())
                 .reason(reason)
                 .build();
@@ -195,7 +196,7 @@ public class SiteService {
         if (email != null && isEmailAllowed(email)) {
             return null;
         }
-        String domains = String.join(", ", deployAccessConfig.getAllowedEmailDomains());
+        String domains = String.join(", ", siteSettingService.getDeployAllowedDomains());
         return "Tài khoản " + (email != null ? email : "")
                 + " không nằm trong danh sách được phép deploy. Chỉ email thuộc "
                 + domains + " mới được deploy website.";
@@ -213,7 +214,7 @@ public class SiteService {
             return true;
         }
 
-        return deployAccessConfig.getAllowedEmailDomains().stream()
+        return siteSettingService.getDeployAllowedDomains().stream()
                 .filter(d -> d != null && !d.isBlank())
                 .map(d -> d.trim().toLowerCase().replaceFirst("^@", ""))
                 .anyMatch(d -> normalized.endsWith("@" + d));

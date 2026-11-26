@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Card, Form, Input, Button, Spin, message } from 'antd'
 import siteSettingService from '../../api/siteSettingService'
+import { useSiteSettings } from '../../contexts/siteSettingsContext'
 import { PageHeader } from '../../components/ui'
 
 const { TextArea } = Input
@@ -13,12 +14,13 @@ const FIELDS = [
   { key: 'contact.phone', label: 'Hotline' },
   { key: 'contact.address', label: 'Địa chỉ' },
   { key: 'contact.hours', label: 'Giờ làm việc' },
-  { key: 'deploy.allowed_domain', label: 'Domain được deploy' },
-  { key: 'deploy.max_size_mb', label: 'Dung lượng tối đa (MB)' },
+  { key: 'deploy.allowed_domain', label: 'Domain được deploy (cách nhau bởi dấu phẩy)' },
+  { key: 'deploy.max_size_mb', label: 'Dung lượng tối đa (MB)', numeric: true },
 ]
 
 export default function AdminSiteSettings() {
   const [form] = Form.useForm()
+  const { reload } = useSiteSettings()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -42,8 +44,9 @@ export default function AdminSiteSettings() {
     try {
       const updates = FIELDS
         .filter((f) => values[f.key] !== undefined && values[f.key] !== null)
-        .map((f) => siteSettingService.update(f.key, String(values[f.key])))
+        .map((f) => siteSettingService.update(f.key, String(values[f.key]).trim()))
       await Promise.all(updates)
+      await reload()
       message.success('Đã lưu cài đặt')
     } catch (err) {
       message.error(err.response?.data?.message || 'Lưu thất bại')
@@ -71,7 +74,15 @@ export default function AdminSiteSettings() {
       <Card style={{ borderRadius: 8 }} styles={{ body: { padding: 24 } }}>
         <Form form={form} layout="vertical" requiredMark={false}>
           {FIELDS.map((field) => (
-            <Form.Item key={field.key} name={field.key} label={field.label}>
+            <Form.Item
+              key={field.key}
+              name={field.key}
+              label={field.label}
+              rules={field.numeric ? [{
+                pattern: /^[1-9]\d*$/,
+                message: 'Vui lòng nhập số nguyên dương',
+              }] : []}
+            >
               {field.multiline ? <TextArea rows={2} /> : <Input />}
             </Form.Item>
           ))}

@@ -12,9 +12,9 @@ import {
   CloseOutlined,
 } from '@ant-design/icons'
 import { useAuth } from '../contexts/AuthContext'
+import { useSiteSettings } from '../contexts/siteSettingsContext'
 import { BrandMark } from './ui'
 import { voltTokens } from '../theme/voltTheme'
-import siteSettingService from '../api/siteSettingService'
 
 const { useBreakpoint } = Grid
 
@@ -39,16 +39,9 @@ const adminNav = [
   { key: '/admin/settings', label: 'Cài đặt' },
 ]
 
-const CONTACT_FALLBACK = {
-  email: 'duyb2407571@student.ctu.edu.vn',
-  phone: '0335050252',
-  address: 'Đại học Cần Thơ',
-  hours: 'Thứ 2 - Thứ 7, 8:00 - 18:00',
-}
-
 export default function AppLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [settings, setSettings] = useState({})
+  const { settings } = useSiteSettings()
   const { isAuthenticated, isAdmin, user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -61,14 +54,6 @@ export default function AppLayout() {
     if (prevIsMobile.current && !isMobile) setMobileMenuOpen(false)
     prevIsMobile.current = isMobile
   }, [isMobile])
-
-  useEffect(() => {
-    let active = true
-    siteSettingService.getPublic()
-      .then((res) => { if (active) setSettings(res.data.data || {}) })
-      .catch(() => {})
-    return () => { active = false }
-  }, [])
 
   const closeOnLinkClick = (e) => {
     if (e.target.closest('a')) setMobileMenuOpen(false)
@@ -147,18 +132,19 @@ export default function AppLayout() {
     )
   )
 
+  const brandName = settings['site.brand_name'] || 'HireHost'
   const contact = {
-    email: settings['contact.email'] || CONTACT_FALLBACK.email,
-    phone: settings['contact.phone'] || CONTACT_FALLBACK.phone,
-    address: settings['contact.address'] || CONTACT_FALLBACK.address,
-    hours: settings['contact.hours'] || CONTACT_FALLBACK.hours,
+    email: settings['contact.email'],
+    phone: settings['contact.phone'],
+    address: settings['contact.address'],
+    hours: settings['contact.hours'],
   }
 
   return (
     <div className="vh-app">
       <header className="vh-header">
         <div className="vh-container vh-header__inner">
-          <BrandMark onClick={() => navigate('/')} />
+          <BrandMark name={brandName} onClick={() => navigate('/')} />
 
           {!isMobile && (
             <nav className="vh-nav" aria-label="Điều hướng chính">
@@ -209,7 +195,7 @@ export default function AppLayout() {
         open={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
         closeIcon={<CloseOutlined />}
-        title={<BrandMark size="sm" />}
+        title={<BrandMark size="sm" name={brandName} />}
         styles={{ body: { padding: '16px 20px' } }}
       >
         <div onClick={closeOnLinkClick}>
@@ -298,7 +284,7 @@ export default function AppLayout() {
         <div className="vh-container">
           <div className="vh-footer__grid">
             <div>
-              <BrandMark size="sm" />
+              <BrandMark size="sm" name={brandName} />
               <p className="vh-footer__tagline">
                 Triển khai web tĩnh miễn phí cho sinh viên CTU và thuê hosting cho dự án lớn hơn.
               </p>
@@ -320,7 +306,7 @@ export default function AppLayout() {
             </div>
           </div>
           <div className="vh-footer__bottom">
-            <span>HireHost ©2026</span>
+            <span>{brandName} ©2026</span>
             <span className="vh-mono">Deploy tĩnh miễn phí · Thuê hosting linh hoạt</span>
           </div>
         </div>

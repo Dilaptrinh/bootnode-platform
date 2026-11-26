@@ -1,7 +1,8 @@
 package rentalhost.vn.web_rental.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -13,7 +14,8 @@ public class SiteSettingDTO {
     @Schema(description = "Update a setting value")
     public static class UpdateRequest {
         @Schema(example = "support@bootnode.cloud")
-        @NotNull
+        @NotBlank
+        @Size(max = 2000)
         private String value;
     }
 
